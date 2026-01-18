@@ -1,0 +1,17 @@
+﻿using DataLabelingSupportSystem.DAL.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DataLabelingSupportSystem.DAL.Interfaces
+{
+    public interface IUserRepository
+    {
+        Task<User?> GetByUsernameAsync(string username);
+        Task<bool> UsernameExistsAsync(string username);
+        Task AddAsync(User user);
+
+    }
+}

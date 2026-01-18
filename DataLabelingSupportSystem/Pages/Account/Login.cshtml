@@ -1,0 +1,187 @@
+﻿@page "/"
+@model LoginModel
+@{
+    ViewData["Title"] = "Login";
+    Layout = null;
+    var returnUrl = (string?)Request.Query["ReturnUrl"];
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - DataLabelingSupportSystem</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <style>
+        .auth-bg {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e8f3ff 0%, #f7fbff 45%, #ffffff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 12px;
+        }
+
+        .auth-card {
+            border: 0;
+            border-radius: 18px;
+            box-shadow: 0 18px 50px rgba(16, 93, 181, .12);
+            overflow: hidden;
+            width: 920px;
+            max-width: 100%;
+            animation: popIn .35s ease-out;
+        }
+
+        .auth-left {
+            background: linear-gradient(135deg, #0d6efd 0%, #47b2ff 100%);
+            color: #fff;
+            padding: 28px;
+            height: 100%;
+        }
+
+        .auth-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.18);
+            border: 1px solid rgba(255,255,255,.22);
+            font-size: 12px;
+            letter-spacing: .2px;
+        }
+
+        .auth-title {
+            font-weight: 800;
+            margin-top: 14px;
+            margin-bottom: 8px;
+            line-height: 1.1;
+        }
+
+        .auth-subtitle {
+            opacity: .92;
+            margin: 0;
+        }
+
+        .auth-right {
+            padding: 28px;
+        }
+
+        .form-control.auth-input {
+            border-radius: 12px;
+            padding: 12px 14px;
+            border: 1px solid #dbe7f6;
+            transition: .2s ease;
+        }
+
+            .form-control.auth-input:focus {
+                border-color: #7db8ff;
+                box-shadow: 0 0 0 .25rem rgba(13,110,253,.15);
+            }
+
+        .btn-auth {
+            border-radius: 12px;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #0d6efd 0%, #47b2ff 100%);
+            border: 0;
+            box-shadow: 0 10px 20px rgba(13,110,253,.18);
+        }
+
+        .btn-outline-soft {
+            border-radius: 12px;
+            padding: 10px 14px;
+            border: 1px solid #bcd8ff;
+            color: #0d6efd;
+            background: rgba(13,110,253,.06);
+            text-decoration: none;
+        }
+
+            .btn-outline-soft:hover {
+                background: rgba(13,110,253,.10);
+                color: #0b5ed7;
+            }
+
+        @@keyframes popIn {
+            from {
+                transform: translateY(6px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-bg">
+        <div class="card auth-card">
+            <div class="row g-0">
+                <div class="col-lg-5">
+                    <div class="auth-left">
+                        <span class="auth-badge">Data Labeling Support System</span>
+                        <h2 class="auth-title">Welcome back</h2>
+                        <p class="auth-subtitle">Sign in to continue.</p>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="auth-right">
+                        <h3 class="mb-3" style="font-weight:800; color:#0b3b6d;">Login</h3>
+
+                        @if (!string.IsNullOrEmpty(Model.Error))
+                        {
+                            <div class="alert alert-danger py-2 mb-3" role="alert">
+                                @Model.Error
+                            </div>
+                        }
+
+                        <form method="post">
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <input class="form-control auth-input" asp-for="Input.Username" autocomplete="username" />
+                                <span asp-validation-for="Input.Username" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input class="form-control auth-input" asp-for="Input.Password" type="password" autocomplete="current-password" />
+                                <span asp-validation-for="Input.Password" class="text-danger"></span>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" asp-for="Input.RememberMe" />
+                                    <label class="form-check-label" asp-for="Input.RememberMe">Remember me</label>
+                                </div>
+
+                                <a class="btn-outline-soft"
+                                   asp-page="/Account/Register"
+                                   asp-route-returnUrl="@returnUrl">
+                                    Create account
+                                </a>
+                            </div>
+
+                            <button type="submit" class="btn btn-auth text-white w-100">
+                                Login
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-3" style="color:#6b8db3; font-size: 13px;">
+                            © 2026 DataLabelingSupportSystem
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

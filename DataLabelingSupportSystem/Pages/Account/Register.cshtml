@@ -1,0 +1,187 @@
+﻿@page
+@model DataLabelingSupportSystem.UI.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Register";
+    Layout = null; // remove top navbar for auth pages
+    var returnUrl = (string?)Request.Query["returnUrl"];
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - DataLabelingSupportSystem</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <style>
+        .auth-bg {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e8f3ff 0%, #f7fbff 45%, #ffffff 100%);
+            display: flex;
+            align-items: center;
+            padding: 32px 12px;
+        }
+
+        .auth-card {
+            border: 0;
+            border-radius: 18px;
+            box-shadow: 0 18px 50px rgba(16, 93, 181, .12);
+            overflow: hidden;
+            animation: popIn .35s ease-out;
+        }
+
+        .auth-left {
+            background: linear-gradient(135deg, #0d6efd 0%, #47b2ff 100%);
+            color: #fff;
+            padding: 28px;
+            height: 100%;
+        }
+
+        .auth-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.18);
+            border: 1px solid rgba(255,255,255,.22);
+            font-size: 12px;
+            letter-spacing: .2px;
+        }
+
+        .auth-title {
+            font-weight: 800;
+            margin-top: 14px;
+            margin-bottom: 8px;
+            line-height: 1.1;
+        }
+
+        .auth-subtitle {
+            opacity: .92;
+            margin: 0;
+        }
+
+        .auth-right {
+            padding: 28px;
+        }
+
+        .form-control.auth-input {
+            border-radius: 12px;
+            padding: 12px 14px;
+            border: 1px solid #dbe7f6;
+            transition: .2s ease;
+        }
+
+            .form-control.auth-input:focus {
+                border-color: #7db8ff;
+                box-shadow: 0 0 0 .25rem rgba(13,110,253,.15);
+            }
+
+        .btn-auth {
+            border-radius: 12px;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #0d6efd 0%, #47b2ff 100%);
+            border: 0;
+            transition: transform .08s ease, box-shadow .2s ease;
+            box-shadow: 0 10px 20px rgba(13,110,253,.18);
+        }
+
+            .btn-auth:active {
+                transform: translateY(1px);
+            }
+
+        @@keyframes popIn {
+            from {
+                transform: translateY(6px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-bg">
+        <div class="container" style="max-width: 920px;">
+            <div class="card auth-card">
+                <div class="row g-0">
+                    <div class="col-lg-5">
+                        <div class="auth-left">
+                            <span class="auth-badge">Create a new account</span>
+                            <h2 class="auth-title">Join the workspace</h2>
+                            <p class="auth-subtitle">Register to start labeling and reviewing.</p>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <div class="auth-right">
+                            <h3 class="mb-3" style="font-weight:800; color:#0b3b6d;">Register</h3>
+
+                            @* Server-side error *@
+                            @if (!string.IsNullOrEmpty(Model.Error))
+                            {
+                                <div class="alert alert-danger py-2 mb-3" role="alert">
+                                    @Model.Error
+                                </div>
+                            }
+
+                            <form method="post" asp-route-returnUrl="@returnUrl">
+                                <div class="mb-3">
+                                    <label class="form-label">Username</label>
+                                    <input class="form-control auth-input" asp-for="Input.Username" autocomplete="username" />
+                                    <span asp-validation-for="Input.Username" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                    <input class="form-control auth-input" asp-for="Input.Password" type="password" autocomplete="new-password" />
+                                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                                    <div class="form-text">Minimum 6 characters.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Confirm password</label>
+                                    <input class="form-control auth-input" asp-for="Input.ConfirmPassword" type="password" autocomplete="new-password" />
+                                    <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Full name (optional)</label>
+                                    <input class="form-control auth-input" asp-for="Input.Name" autocomplete="name" />
+                                    <span asp-validation-for="Input.Name" class="text-danger"></span>
+                                </div>
+
+                                <button type="submit" class="btn btn-auth text-white w-100">
+                                    Create account
+                                </button>
+
+                                <div class="text-center mt-3">
+                                    Already have an account?
+                                    <a class="link-primary"
+                                       asp-page="/Account/Login"
+                                       asp-route-returnUrl="@returnUrl">
+                                        Sign in
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3" style="color:#6b8db3;">
+                © 2026 DataLabelingSupportSystem
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
