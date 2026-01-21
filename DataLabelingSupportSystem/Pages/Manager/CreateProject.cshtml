@@ -1,0 +1,39 @@
+﻿@page
+@model DataLabelingSupportSystem.UI.Pages.Manager.CreateProjectModel
+@{
+    ViewData["Title"] = "Tạo dự án mới";
+}
+
+<div class="container mt-4">
+    <h2>Tạo dự án mới</h2>
+    <hr />
+    <div class="row">
+        <div class="col-md-6">
+            <form method="post">
+                @* Hiển thị lỗi tổng quát nếu có *@
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Input.Name" class="control-label font-weight-bold">Tên dự án</label>
+                    <input asp-for="Input.Name" class="form-control" placeholder="Nhập tên dự án..." />
+                    <span asp-validation-for="Input.Name" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Input.Description" class="control-label font-weight-bold">Mô tả</label>
+                    <textarea asp-for="Input.Description" class="form-control" rows="4" placeholder="Mô tả chi tiết..."></textarea>
+                    <span asp-validation-for="Input.Description" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Tạo mới</button>
+                    <a asp-page="/Manager/Index" class="btn btn-secondary">Hủy bỏ</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
