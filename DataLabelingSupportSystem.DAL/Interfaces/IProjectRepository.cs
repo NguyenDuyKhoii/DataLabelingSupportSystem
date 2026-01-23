@@ -10,6 +10,8 @@ namespace DataLabelingSupportSystem.DAL.Interfaces
     public interface IProjectRepository
     {
         Task AddAsync(Project project);
+        Task<Project?> GetByIdAsync(int projectId);
         Task <List<Project>> GetByManagerIdAsync(int managerId);
+        Task UpdateAsync(Project project);
     }
 }

@@ -11,5 +11,8 @@ namespace DataLabelingSupportSystem.BLL.Interface
     {
         Task CreateProjectAsync(CreateProjectDto dto ,int managerId);
         Task<List<ProjectViewDto>> GetProjectByManagerIdAsync(int managerId);
+
+        Task<ProjectViewDto?> GetProjectByIdAsync(int projectId);
+        Task UpdateProjectAsync(UpdateProjectDto dto);
     }
 }

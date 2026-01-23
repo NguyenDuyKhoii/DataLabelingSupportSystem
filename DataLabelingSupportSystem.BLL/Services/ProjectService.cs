@@ -34,11 +34,25 @@ namespace DataLabelingSupportSystem.BLL.Services
             
         }
 
+        public async Task<ProjectViewDto?> GetProjectByIdAsync(int projectId)
+        {
+            var p = await _repository.GetByIdAsync(projectId);
+            if (p == null) return null;
+
+            return new ProjectViewDto
+            {
+                Id = p.ProjectId,
+                Name = p.Name,
+                Description = p.Description,
+                Status = p.Status.ToString(),
+                CreatedDate = p.CreatedDate
+            };
+        }
+
         public async Task<List<ProjectViewDto>> GetProjectByManagerIdAsync(int managerId)
         {
             var projects = await _repository.GetByManagerIdAsync(managerId);
 
-            // Map từ Entity sang DTO
             return projects.Select(p => new ProjectViewDto
             {
                 Id = p.ProjectId,
@@ -47,6 +61,23 @@ namespace DataLabelingSupportSystem.BLL.Services
                 Status = p.Status.ToString(),
                 CreatedDate = p.CreatedDate
             }).ToList();
+        }
+
+        public async  Task UpdateProjectAsync(UpdateProjectDto dto)
+        {
+            var project = await _repository.GetByIdAsync(dto.Id);
+            if (project != null)
+            {
+                
+                project.Name = dto.Name;
+                project.Description = dto.Description;
+                //project.Status = dto.Status;
+                
+
+
+
+                await _repository.UpdateAsync(project);
+            }
         }
     }
 }

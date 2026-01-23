@@ -43,15 +43,18 @@
                             @if(item.Status == "New") { <span class="badge bg-primary">Mới tạo</span> }
                             else if(item.Status == "InProgress") { <span class="badge bg-warning text-dark">Đang chạy</span> }
                             else { <span class="badge bg-success">Hoàn thành</span> }
-                        </td>
-                        <td>@item.CreatedDate.ToString("dd/MM/yyyy")</td>
-                        <td>@item.Description</td>
-                        <td>
-                            <a href="#" class="btn btn-sm btn-primary">Xem chi tiết</a>
-                            <a href="#" class="btn btn-sm btn-warning">Sửa</a>
-                        </td>
-                    </tr>
-                }
+                            </td>
+                            <td>@item.CreatedDate.ToString("dd/MM/yyyy")</td>
+                            <td>@item.Description</td>
+                            <td>
+                                <a asp-page="/Manager/Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">
+                                    Quản lý (Ảnh/Label)
+                                </a>
+
+                                <a asp-page="/Manager/EditProject" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Sửa</a>
+                            </td>
+                        </tr>
+                    }
             </tbody>
         </table>
     }

@@ -1,0 +1,212 @@
+﻿@page "{id:int}"
+@model DataLabelingSupportSystem.UI.Pages.Manager.DetailsModel
+@{
+    ViewData["Title"] = "Chi tiết dự án: " + Model.Project.Name;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="text-primary mb-0">@Model.Project.Name</h2>
+            <p class="text-muted">@Model.Project.Description</p>
+        </div>
+        <div>
+            <span class="badge bg-secondary">@Model.Project.Status</span>
+            <br />
+            <small class="text-muted">Ngày tạo: @Model.Project.CreatedDate.ToString("dd/MM/yyyy")</small>
+        </div>
+    </div>
+    
+    <a asp-page="/Manager/Index" class="btn btn-outline-secondary btn-sm mb-4">&larr; Quay lại danh sách</a>
+
+    <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="labels-tab" data-bs-toggle="tab" data-bs-target="#labels" type="button" role="tab">
+                🏷️ Quản lý Nhãn (Labels)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="images-tab" data-bs-toggle="tab" data-bs-target="#images" type="button" role="tab">
+                🖼️ Quản lý Ảnh (DataItems)
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        
+        <div class="tab-pane fade show active" id="labels" role="tabpanel">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card shadow-sm bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">Thêm nhãn mới</h5>
+                            <form asp-page-handler="AddLabel" method="post">
+                                <input type="hidden" name="id" value="@Model.Project.Id" />
+
+                                <div class="mb-3">
+                                    <label class="form-label">Tên nhãn</label>
+                                    <input asp-for="NewLabel.Name" class="form-control" placeholder="VD: Con chó..." />
+                                    <span asp-validation-for="NewLabel.Name" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Màu hiển thị</label>
+                                    <div class="d-flex align-items-center">
+                                        <input type="color" asp-for="NewLabel.Color" class="form-control form-control-color me-2" title="Chọn màu" />
+                                        <small class="text-muted">Bấm vào để chọn màu</small>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-success w-100">+ Lưu nhãn</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Danh sách nhãn hiện tại (@Model.Labels.Count)</h5>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            @foreach (var label in Model.Labels)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <span class="rounded-circle border me-3" style="width: 25px; height: 25px; background-color: @label.Color;"></span>
+                                        <span class="fw-bold fs-5">@label.Name</span>
+                                    </div>
+                                    
+                                    <div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm me-2" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editModal" 
+                                                onclick="setEditData(@label.Id, '@label.Name', '@label.Color')">
+                                            ✏️ Sửa
+                                        </button>
+                                        <form asp-page-handler="DeleteLabel" method="post" class="d-inline" onsubmit="return confirm('Bạn chắc chắn muốn xóa nhãn này?');">
+                                            <input type="hidden" name="labelId" value="@label.Id" />
+                                            <input type="hidden" name="projectId" value="@Model.Project.Id" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">🗑️ Xóa</button>
+                                        </form>
+                                    </div>
+                                </li>
+                            }
+                            @if(Model.Labels.Count == 0)
+                            {
+                                <li class="list-group-item text-center text-muted py-4">
+                                    Chưa có nhãn nào. Hãy thêm nhãn đầu tiên ở cột bên trái!
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="images" role="tabpanel">
+            <div class="row mt-4">
+                <div class="col-md-12 mb-4">
+                    <div class="card border-primary mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <i class="bi bi-cloud-upload"></i> Upload ảnh dữ liệu
+                        </div>
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data" asp-page-handler="UploadImages">
+                                <input type="hidden" name="id" value="@Model.Project.Id" />
+                                
+                                <div class="input-group">
+                                    <input type="file" asp-for="UploadFiles" class="form-control" multiple accept="image/*" />
+                                    <button class="btn btn-success" type="submit">⬆ Tải lên ngay</button>
+                                </div>
+                                <small class="text-muted fst-italic">Hỗ trợ định dạng: .jpg, .png, .jpeg. (Có thể chọn nhiều ảnh cùng lúc)</small>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>📸 Danh sách ảnh trong dự án (@Model.ImageUrls.Count)</h5>
+                </div>
+                <div class="row g-3">
+                    @* Kiểm tra xem có ảnh nào không *@
+                    @if (Model.ImageUrls != null && Model.ImageUrls.Count > 0)
+                    {
+                        @* Có ảnh thì lặp qua từng cái link để hiện ra *@
+                        @foreach (var imgUrl in Model.ImageUrls)
+                        {
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="card h-100 shadow-sm hover-shadow">
+                                    <a href="@imgUrl" target="_blank">
+                                        <img src="@imgUrl" class="card-img-top" style="height: 160px; object-fit: cover;" alt="Data Item">
+                                    </a>
+                                    <div class="card-body p-2 text-center">
+                                        <small class="text-muted">Image Cloud</small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        @* Nếu không có ảnh thì hiện thông báo *@
+                        <div class="col-12">
+                            <div class="alert alert-secondary text-center py-5">
+                                <h3 class="text-muted display-6">📂</h3>
+                                <p class="text-muted mb-0">Chưa có ảnh nào được tải lên.</p>
+                                <p class="small">Hãy chọn ảnh ở trên và bấm Tải lên.</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Sửa Nhãn -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">✏️ Chỉnh sửa nhãn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-page-handler="UpdateLabel" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="projectId" value="@Model.Project.Id" />
+                    <input type="hidden" name="labelId" id="editLabelId" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tên nhãn</label>
+                        <input type="text" class="form-control" name="labelName" id="editLabelName" required />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Màu hiển thị</label>
+                        <div class="d-flex align-items-center">
+                            <input type="color" class="form-control form-control-color me-2" name="labelColor" id="editLabelColor" />
+                            <small class="text-muted">Bấm vào để chọn màu</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">💾 Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function setEditData(id, name, color) {
+            document.getElementById('editLabelId').value = id;
+            document.getElementById('editLabelName').value = name;
+            document.getElementById('editLabelColor').value = color;
+        }
+    </script>
+}

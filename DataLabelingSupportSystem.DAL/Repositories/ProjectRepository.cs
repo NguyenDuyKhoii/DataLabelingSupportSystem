@@ -25,12 +25,23 @@ namespace DataLabelingSupportSystem.DAL.Repositories
             await _context.SaveChangesAsync();
         }
 
+        public async Task<Project?> GetByIdAsync(int projectId)
+        {
+            return await _context.Projects.FindAsync(projectId);
+        }
+
         public async Task<List<Project>> GetByManagerIdAsync(int managerId)
         {
            return await _context.Projects
                 .Where(p =>p.ManagerId == managerId)
                 .OrderByDescending(p => p.ProjectId)
                 .ToListAsync();
+        }
+
+        public async  Task UpdateAsync(Project project)
+        {
+            _context.Projects.Update(project);
+            await _context.SaveChangesAsync();
         }
     }
 }

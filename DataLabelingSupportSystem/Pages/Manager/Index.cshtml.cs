@@ -17,18 +17,17 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
             _projectService = projectService;
         }
 
-        // Danh sách dự án để hiển thị ra màn hình
+        
         public List<ProjectViewDto> Projects { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
-            // 1. Lấy ID Manager từ cookie
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdStr)) return RedirectToPage("/Account/Login");
 
             int managerId = int.Parse(userIdStr);
 
-            // 2. Gọi Service lấy danh sách
+            
             Projects = await _projectService.GetProjectByManagerIdAsync(managerId);
 
             return Page();
