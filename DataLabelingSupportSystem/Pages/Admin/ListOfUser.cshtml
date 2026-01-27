@@ -1,0 +1,571 @@
+﻿@page
+@model DataLabelingSupportSystem.UI.Pages.Admin.ListOfUserModel
+@{
+    ViewData["Title"] = "User Managerment";
+}
+
+<div class="container-fluid">
+    <!-- Success Messages -->
+    @if (!string.IsNullOrEmpty(Model.UpdateSuccessMessage) || TempData["UpdateSuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @(Model.UpdateSuccessMessage ?? TempData["UpdateSuccessMessage"]?.ToString())
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.DeleteSuccessMessage) || TempData["DeleteSuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @(Model.DeleteSuccessMessage ?? TempData["DeleteSuccessMessage"]?.ToString())
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="fas fa-users"></i> Quản lý User
+            <span class="badge bg-primary">@Model.Users.Count</span>
+        </h2>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createUserModal">
+            <i class="fas fa-plus"></i> Thêm User mới
+        </button>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">🔍 Tìm kiếm</label>
+                    <input type="text" class="form-control" name="Search"
+                           value="@Model.Search" placeholder="Username, Name, Email..." />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Vai trò</label>
+                    <select name="RoleId" class="form-select" asp-items="Model.RoleList">
+                        <option value="">-- Tất cả --</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Lọc
+                    </button>
+                    <a asp-page="./ListOfUser" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 60px">#</th>
+                            <th>Username</th>
+                            <th>Tên</th>
+                            <th>Email</th>
+                            <th>Vai trò</th>
+                            <th>Ngày tạo</th>
+                            <th style="min-width: 260px;" class="text-center">Thao tác</th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Users.Any())
+                        {
+                            int stt = 1;
+                            @foreach (var user in Model.Users)
+                            {
+                                <tr>
+                                    <td>@stt</td>
+                                    <td>
+                                        <strong>@user.Username</strong>
+                                    </td>
+                                    <td>@user.Name</td>
+                                    <td>@user.Email</td>
+                                    <td>
+                                        @{
+                                            string badgeClass = user.RoleName switch
+                                            {
+                                                "Admin" => "bg-danger",
+                                                "Manager" => "bg-warning text-dark",
+                                                "Reviewer" => "bg-info",
+                                                "Annotator" => "bg-secondary",
+                                                _ => "bg-light text-dark"
+                                            };
+                                        }
+                                        <span class="badge @badgeClass">
+                                            @user.RoleName
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">@user.CreatedAt.ToString("dd/MM HH:mm")</small>
+                                    </td>
+                                    <td style="min-width: 250px;">
+                                        <!-- Tăng độ rộng cột để chứa đủ 3 nút -->
+                                        <div class="d-flex gap-2">
+                                            <!-- Dùng flex và gap để tách các nút ra -->
+                                            <!-- NÚT XEM CHI TIẾT -->
+                                            <button type="button" class="btn btn-info btn-sm text-white d-flex align-items-center gap-1"
+                                                    title="Xem chi tiết"
+                                                    onclick="viewUserDetails('@user.Username', '@user.Name', '@user.Email', '@(user.Phone ?? "")', '@user.RoleName', @user.IsActive.ToString().ToLower(), '@user.CreatedAt.ToString("dd/MM/yyyy HH:mm")')">
+                                                <i class="fas fa-eye"></i> <span>Xem</span>
+                                            </button>
+
+                                            <!-- NÚT SỬA -->
+                                            <button type="button" class="btn btn-warning btn-sm d-flex align-items-center gap-1"
+                                                    title="Cập nhật thông tin"
+                                                    onclick="loadUserForEdit(@user.UserId, '@user.Username', '@user.Name', '@user.Email', '@(user.RoleName)', @user.RoleId, '@(user.Phone ?? "")', @user.IsActive.ToString().ToLower())">
+                                                <i class="fas fa-edit"></i> <span>Sửa</span>
+                                            </button>
+
+                                            <!-- NÚT XÓA -->
+                                            <form method="post" asp-page-handler="Delete" asp-route-id="@user.UserId"
+                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa user [@user.Username]? Hành động này sẽ chuyển trạng thái sang Inactive.');"
+                                                  class="d-inline">
+                                                <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-1" title="Xóa tài khoản">
+                                                    <i class="fas fa-trash-alt"></i> <span>Xóa</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                stt++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fas fa-users fa-3x mb-3 opacity-50"></i>
+                                        <h5>Không tìm thấy User nào</h5>
+                                        <p class="mb-0">Thử thay đổi bộ lọc hoặc <button type="button" class="btn btn-link p-0" data-bs-toggle="modal" data-bs-target="#createUserModal">tạo user mới</button></p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: XEM CHI TIẾT USER                   -->
+<!-- ========================================== -->
+<div class="modal fade" id="viewUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-id-card"></i> Thông tin chi tiết
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 80px; height: 80px;">
+                        <i class="fas fa-user fa-3x text-secondary"></i>
+                    </div>
+                    <h5 id="viewDisplayUsername" class="mb-0"></h5>
+                    <span id="viewDisplayRole" class="badge bg-primary"></span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label small text-muted">Họ và tên</label>
+                        <input type="text" class="form-control bg-white" id="viewName" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted">Số điện thoại</label>
+                        <input type="text" class="form-control bg-white" id="viewPhone" readonly />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Email</label>
+                        <input type="text" class="form-control bg-white" id="viewEmail" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted">Trạng thái</label>
+                        <input type="text" class="form-control bg-white" id="viewStatus" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted">Ngày tạo</label>
+                        <input type="text" class="form-control bg-white" id="viewCreatedAt" readonly />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: CREATE USER                         -->
+<!-- ========================================== -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="createUserModalLabel">
+                    <i class="fas fa-user-plus"></i> Thêm User mới
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Create" id="createUserForm" class="needs-validation" novalidate>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(Model.CreateErrorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle"></i> @Model.CreateErrorMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.CreateSuccessMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle"></i> @Model.CreateSuccessMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.Username" class="form-label">
+                                Username <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="CreateUserInput.Username" class="form-control"
+                                   placeholder="Nhập username" required />
+                            <span asp-validation-for="CreateUserInput.Username" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.Password" class="form-label">
+                                Password <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="CreateUserInput.Password" type="password" class="form-control"
+                                   placeholder="Tối thiểu 6 ký tự" required />
+                            <span asp-validation-for="CreateUserInput.Password" class="text-danger"></span>
+                            <div class="form-text">Tối thiểu 6 ký tự</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.Name" class="form-label">
+                                Tên <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="CreateUserInput.Name" class="form-control"
+                                   placeholder="Nhập tên đầy đủ" required />
+                            <span asp-validation-for="CreateUserInput.Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.Email" class="form-label">
+                                Email
+                            </label>
+                            <input asp-for="CreateUserInput.Email" type="email" class="form-control"
+                                   placeholder="example@email.com" />
+                            <span asp-validation-for="CreateUserInput.Email" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.Phone" class="form-label">
+                                Số điện thoại
+                            </label>
+                            <input asp-for="CreateUserInput.Phone" type="tel" class="form-control"
+                                   placeholder="0123456789" />
+                            <span asp-validation-for="CreateUserInput.Phone" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.RoleId" class="form-label">
+                                Vai trò <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="CreateUserInput.RoleId" asp-items="Model.RoleList"
+                                    class="form-select" required>
+                                <option value="">-- Chọn vai trò --</option>
+                            </select>
+                            <span asp-validation-for="CreateUserInput.RoleId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Đóng
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Tạo User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: UPDATE USER                         -->
+<!-- ========================================== -->
+<div class="modal fade" id="updateUserModal" tabindex="-1" aria-labelledby="updateUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="updateUserModalLabel">
+                    <i class="fas fa-user-edit"></i> Cập nhật User
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Update" id="updateUserForm" class="needs-validation" novalidate>
+                <input type="hidden" asp-for="UpdateUserInput.UserId" id="updateUserId" />
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(Model.UpdateErrorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle"></i> @Model.UpdateErrorMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.UpdateSuccessMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle"></i> @Model.UpdateSuccessMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Username
+                        </label>
+                        <input type="text" class="form-control" id="updateUsername" readonly disabled />
+                        <div class="form-text">Username không thể thay đổi</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="UpdateUserInput.Name" class="form-label">
+                                Tên <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="UpdateUserInput.Name" class="form-control"
+                                   id="updateName" placeholder="Nhập tên đầy đủ" required />
+                            <span asp-validation-for="UpdateUserInput.Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="UpdateUserInput.Email" class="form-label">
+                                Email
+                            </label>
+                            <input asp-for="UpdateUserInput.Email" type="email" class="form-control"
+                                   id="updateEmail" placeholder="example@email.com" />
+                            <span asp-validation-for="UpdateUserInput.Email" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="UpdateUserInput.Phone" class="form-label">
+                                Số điện thoại
+                            </label>
+                            <input asp-for="UpdateUserInput.Phone" type="tel" class="form-control"
+                                   id="updatePhone" placeholder="0123456789" />
+                            <span asp-validation-for="UpdateUserInput.Phone" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="UpdateUserInput.RoleId" class="form-label">
+                                Vai trò <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="UpdateUserInput.RoleId" asp-items="Model.RoleList"
+                                    class="form-select" id="updateRoleId" required>
+                                <option value="">-- Chọn vai trò --</option>
+                            </select>
+                            <span asp-validation-for="UpdateUserInput.RoleId" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="UpdateUserInput.IsActive" class="form-check-input"
+                                   type="checkbox" id="updateIsActive" />
+                            <label class="form-check-label" for="updateIsActive">
+                                Kích hoạt tài khoản
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Đóng
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save"></i> Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Success Message -->
+@if (!string.IsNullOrEmpty(Model.DeleteSuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3"
+         role="alert" style="z-index: 9999;">
+        <i class="fas fa-check-circle"></i> @Model.DeleteSuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function viewUserDetails(username, name, email, phone, roleName, isActive, createdAt) {
+            document.getElementById('viewDisplayUsername').innerText = username;
+            document.getElementById('viewDisplayRole').innerText = roleName;
+            document.getElementById('viewName').value = name || 'Chưa cập nhật';
+            document.getElementById('viewEmail').value = email || 'Chưa cập nhật';
+            document.getElementById('viewPhone').value = phone || 'Chưa cập nhật';
+            document.getElementById('viewCreatedAt').value = createdAt;
+
+            var statusInput = document.getElementById('viewStatus');
+            if (isActive === true || isActive === 'true') {
+                statusInput.value = 'Đang hoạt động';
+                statusInput.classList.remove('text-danger');
+                statusInput.classList.add('text-success', 'fw-bold');
+            } else {
+                statusInput.value = 'Đã khóa / Inactive';
+                statusInput.classList.remove('text-success');
+                statusInput.classList.add('text-danger', 'fw-bold');
+            }
+
+            var viewModal = new bootstrap.Modal(document.getElementById('viewUserModal'));
+            viewModal.show();
+        }
+
+        // Reset form Create
+        $('#createUserModal').on('hidden.bs.modal', function () {
+            $('#createUserForm')[0].reset();
+            $('#createUserForm').removeClass('was-validated');
+            $('.alert').remove();
+        });
+
+        // Validation Create Form
+        (function() {
+            'use strict';
+            var form = document.getElementById('createUserForm');
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            }
+        })();
+
+        // Auto reload after success
+        @if (!string.IsNullOrEmpty(Model.CreateSuccessMessage))
+        {
+            <text>
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1500);
+            </text>
+        }
+
+        // Auto dismiss alerts
+        setTimeout(function() {
+            $('.alert-success').fadeOut('slow', function() {
+                $(this).remove();
+            });
+        }, 3000);
+
+        // Load data for Update
+        function loadUserForEdit(userId, username, name, email, roleName, roleId, phone, isActive) {
+            var userIdInput = document.getElementById('updateUserId');
+            var nameInput = document.getElementById('updateName');
+            var emailInput = document.getElementById('updateEmail');
+            var phoneInput = document.getElementById('updatePhone');
+            var roleIdInput = document.getElementById('updateRoleId');
+            var isActiveInput = document.getElementById('updateIsActive');
+            var usernameInput = document.getElementById('updateUsername');
+
+            if (userIdInput) userIdInput.value = userId;
+            if (nameInput) {
+                nameInput.value = name || '';
+                nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            if (emailInput) {
+                emailInput.value = email || '';
+                emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            if (phoneInput) {
+                phoneInput.value = phone || '';
+                phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            if (roleIdInput) {
+                roleIdInput.value = roleId || '';
+                roleIdInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (isActiveInput) {
+                isActiveInput.checked = isActive === true || isActive === 'true';
+                isActiveInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (usernameInput) usernameInput.value = username || '';
+
+            var updateModal = new bootstrap.Modal(document.getElementById('updateUserModal'));
+            updateModal.show();
+        }
+
+        // Reset form Update
+        $('#updateUserModal').on('hidden.bs.modal', function () {
+            $('#updateUserForm')[0].reset();
+            $('#updateUserForm').removeClass('was-validated');
+            $('.alert').remove();
+        });
+
+        // Validation Update Form
+        (function() {
+            'use strict';
+            var form = document.getElementById('updateUserForm');
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    var isActiveInput = document.getElementById('updateIsActive');
+                    if (isActiveInput && !isActiveInput.checked) {
+                        var hiddenInput = document.querySelector('input[name="UpdateUserInput.IsActive"][type="hidden"]');
+                        if (!hiddenInput) {
+                            hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = 'UpdateUserInput.IsActive';
+                            hiddenInput.value = 'false';
+                            form.appendChild(hiddenInput);
+                        }
+                    } else if (isActiveInput && isActiveInput.checked) {
+                        var hiddenInput = document.querySelector('input[name="UpdateUserInput.IsActive"][type="hidden"]');
+                        if (hiddenInput) hiddenInput.remove();
+                    }
+
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            }
+        })();
+    </script>
+}
