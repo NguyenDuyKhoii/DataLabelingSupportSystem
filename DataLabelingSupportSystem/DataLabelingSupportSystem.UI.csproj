@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="Pages\Admin\ListOfUser.cshtml.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.21" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.12">
       <PrivateAssets>all</PrivateAssets>

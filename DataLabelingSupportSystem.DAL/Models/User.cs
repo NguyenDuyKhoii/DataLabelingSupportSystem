@@ -1,6 +1,4 @@
-﻿
-
-namespace DataLabelingSupportSystem.DAL.Models;
+﻿namespace DataLabelingSupportSystem.DAL.Models;
 
 public class User
 {
@@ -8,6 +6,13 @@ public class User
     public string Username { get; set; } = null!;
     public string Password { get; set; } = null!;
     public string? Name { get; set; }
+
+    // THÊM: Thuộc tính mới cho CRUD
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     public int RoleId { get; set; }
     public Role Role { get; set; } = null!;

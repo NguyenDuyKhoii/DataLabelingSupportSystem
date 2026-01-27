@@ -1,8 +1,5 @@
 ﻿using DataLabelingSupportSystem.DAL.Models;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DataLabelingSupportSystem.DAL.Interfaces
@@ -13,5 +10,12 @@ namespace DataLabelingSupportSystem.DAL.Interfaces
         Task<bool> UsernameExistsAsync(string username);
         Task AddAsync(User user);
 
+        Task<List<User>> GetAllUsersAsync();
+        Task<User?> GetUserByIdAsync(int id);
+        Task<bool> EmailExistsAsync(string email, int? excludeUserId = null);
+        Task UpdateAsync(User user);
+        Task SaveUserAsync(User user);
+        Task DeleteAsync(int id);
+        Task<int> CountAsync();
     }
 }
