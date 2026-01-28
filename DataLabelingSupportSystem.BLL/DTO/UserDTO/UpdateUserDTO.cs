@@ -7,16 +7,16 @@ namespace DataLabelingSupportSystem.DTOs
         [Required]
         public int UserId { get; set; }
 
-        [Required(ErrorMessage = "Tên bắt buộc")]
+        [Required(ErrorMessage = "Name is required")]
         public string Name { get; set; } = string.Empty;
 
-        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
+        [EmailAddress(ErrorMessage = "Invalid email")]
         public string? Email { get; set; }
 
-        [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
+        [Phone(ErrorMessage = "Invalid phone number")]
         public string? Phone { get; set; }
 
-        [Required(ErrorMessage = "Vai trò bắt buộc")]
+        [Required(ErrorMessage = "Role is required")]
         public int RoleId { get; set; }
 
         public bool IsActive { get; set; }

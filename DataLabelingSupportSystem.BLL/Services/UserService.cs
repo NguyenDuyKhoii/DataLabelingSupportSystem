@@ -1,18 +1,20 @@
 ﻿using DataLabelingSupportSystem.DAL.Interfaces;
 using DataLabelingSupportSystem.DAL.Models;
 using DataLabelingSupportSystem.DTOs;
-using DataLabelingSupportSystem.BLL.Utilities;
 using DataLabelingSupportSystem.BLL.Interface;
+using Microsoft.AspNetCore.Identity;
 
 namespace DataLabelingSupportSystem.BLL.Services
 {
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IPasswordHasher<User> _passwordHasher;
 
-        public UserService(IUserRepository userRepository)
+        public UserService(IUserRepository userRepository, IPasswordHasher<User> passwordHasher)
         {
             _userRepository = userRepository;
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<List<UserDto>> GetUsersAsync(string? search = null, int? roleId = null, bool? isActive = null)
@@ -25,16 +27,16 @@ namespace DataLabelingSupportSystem.BLL.Services
             {
                 UserId = u.UserId,
                 Username = u.Username,
-                Name = u.Name ?? "Chưa cập nhật", // Handle null cho đẹp
+                Name = u.Name ?? "Not updated", // Handle null gracefully
                 Email = u.Email ?? "",
                 Phone = u.Phone ?? "",
 
                 RoleId = u.RoleId,
-                // Lưu ý: Cần chắc chắn Repo đã Include(u => u.Role) 
-                // nếu không u.Role sẽ null -> gây lỗi.
+                // Note: Ensure Repo has Include(u => u.Role) 
+                // otherwise u.Role will be null -> causing error.
                 RoleName = u.Role != null ? u.Role.RoleName : "Unknown",
 
-                // QUAN TRỌNG NHẤT: Phải map IsActive
+                // IMPORTANT: Must map IsActive
                 IsActive = u.IsActive,
 
                 CreatedAt = u.CreatedAt
@@ -84,19 +86,18 @@ namespace DataLabelingSupportSystem.BLL.Services
         {
             // Validate username
             if (await _userRepository.UsernameExistsAsync(dto.Username))
-                throw new InvalidOperationException("Username đã tồn tại. Vui lòng chọn username khác.");
+                throw new InvalidOperationException("Username already exists. Please choose another username.");
 
-            // Validate email nếu có
+            // Validate email if provided
             if (!string.IsNullOrWhiteSpace(dto.Email))
             {
                 if (await _userRepository.EmailExistsAsync(dto.Email))
-                    throw new InvalidOperationException("Email này đã được sử dụng. Vui lòng sử dụng email khác.");
+                    throw new InvalidOperationException("Email is already in use. Please use another email.");
             }
 
             var user = new User
             {
                 Username = dto.Username,
-                Password = PasswordHelper.HashPassword(dto.Password),
                 Name = dto.Name,
                 Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim(),
                 Phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone.Trim(),
@@ -104,6 +105,8 @@ namespace DataLabelingSupportSystem.BLL.Services
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
+ 
+            user.Password = _passwordHasher.HashPassword(user, dto.Password);
 
             await _userRepository.AddAsync(user);
             return true;
@@ -115,20 +118,20 @@ namespace DataLabelingSupportSystem.BLL.Services
         {
             var user = await _userRepository.GetUserByIdAsync(dto.UserId);
             if (user == null)
-                throw new InvalidOperationException("Không tìm thấy user cần cập nhật.");
+                throw new InvalidOperationException("User to be updated not found.");
 
-            // Validate email nếu có và đã thay đổi
+            // Validate email if provided and changed
             if (!string.IsNullOrWhiteSpace(dto.Email))
             {
                 var trimmedEmail = dto.Email.Trim();
                 if (user.Email != trimmedEmail)
                 {
                     if (await _userRepository.EmailExistsAsync(trimmedEmail, dto.UserId))
-                        throw new InvalidOperationException("Email này đã được sử dụng. Vui lòng sử dụng email khác.");
+                        throw new InvalidOperationException("This email is already in use. Please use another email.");
                 }
             }
 
-            // Update properties trực tiếp trên entity đã được track
+            // Update properties directly on the tracked entity
             user.Name = dto.Name ?? "";
             user.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
             user.Phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone.Trim();
@@ -136,7 +139,7 @@ namespace DataLabelingSupportSystem.BLL.Services
             user.IsActive = dto.IsActive;
             user.UpdatedAt = DateTime.UtcNow;
 
-            // Lưu trực tiếp - entity đã được track nên chỉ cần SaveChanges
+            // Save directly - entity is tracked so only SaveChanges is needed
             await _userRepository.SaveUserAsync(user);
             return true;
         }
