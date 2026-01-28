@@ -3,6 +3,7 @@ using DataLabelingSupportSystem.BLL.Services;
 using DataLabelingSupportSystem.DAL.DbContext;
 using DataLabelingSupportSystem.DAL.Interfaces;
 using DataLabelingSupportSystem.DAL.Models;
+using DataLabelingSupportSystem.DAL.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,16 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
+
+
+builder.Services.AddScoped<ILabelRepository, LabelRepository>();
+builder.Services.AddScoped<ILabelService, LabelService>();
+
+
+builder.Services.AddScoped<IDataItemService, DataItemService>();
+builder.Services.AddScoped<IDataItemRepository, DataItemRepository>();
 
 // 3) AuthN (Cookie)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
