@@ -41,6 +41,7 @@ namespace DataLabelingSupportSystem.UI.Pages.Admin
         public string? DeleteSuccessMessage { get; set; }
 
         public async Task OnGetAsync()
+
         {
             if (TempData["UpdateSuccessMessage"] != null)
                 UpdateSuccessMessage = TempData["UpdateSuccessMessage"]?.ToString();
@@ -62,69 +63,45 @@ namespace DataLabelingSupportSystem.UI.Pages.Admin
 
         public async Task<IActionResult> OnPostCreateAsync()
         {
-            // BƯỚC 1: Xóa sạch toàn bộ trạng thái lỗi hiện tại
-            // (Điều này giúp loại bỏ mọi lỗi "oan" do UpdateUserInput gây ra)
             ModelState.Clear();
 
-            // BƯỚC 2: Validate lại thủ công CHỈ RIÊNG CreateUserInput
-            // Hàm này sẽ trả về true nếu CreateUserInput hợp lệ, false nếu thiếu dữ liệu
             if (!TryValidateModel(CreateUserInput, nameof(CreateUserInput)))
             {
-                // Debug: Ghi lỗi ra cửa sổ Output để bạn kiểm tra nếu cần
-                foreach (var state in ModelState)
-                {
-                    foreach (var error in state.Value.Errors)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Lỗi field {state.Key}: {error.ErrorMessage}");
-                    }
-                }
-
-                await LoadDataAsync();
-                CreateErrorMessage = "Vui lòng kiểm tra lại thông tin đã nhập (Các trường có dấu *).";
-                return Page();
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return new JsonResult(new { success = false, message = "Please check the entered information (Fields with *).", errors });
             }
 
-            // BƯỚC 3: Logic nghiệp vụ (Kiểm tra Email trùng)
             if (!string.IsNullOrWhiteSpace(CreateUserInput.Email))
             {
                 if (await _userService.EmailExistsAsync(CreateUserInput.Email))
                 {
-                    ModelState.AddModelError(nameof(CreateUserInput.Email), "Email này đã được sử dụng.");
-                    await LoadDataAsync();
-                    CreateErrorMessage = "Email này đã được sử dụng.";
-                    return Page();
+                    return new JsonResult(new { success = false, message = "This email is already in use." });
                 }
             }
 
-            // BƯỚC 4: Gọi Service tạo mới
             try
             {
                 var result = await _userService.CreateUserAsync(CreateUserInput);
                 if (result)
                 {
-                    CreateSuccessMessage = "Tạo user mới thành công!";
-
-                    // Reset dữ liệu form
-                    CreateUserInput = new CreateUserDto();
-                    ModelState.Clear();
-
-                    await LoadDataAsync();
-                    return Page();
+                    TempData["CreateSuccessMessage"] = "User created successfully!";
+                    return new JsonResult(new { success = true, message = "User created successfully!" });
                 }
                 else
                 {
-                    CreateErrorMessage = "Không thể tạo user. Username có thể đã tồn tại.";
-                    await LoadDataAsync();
-                    return Page();
+                    return new JsonResult(new { success = false, message = "Could not create user. Username may already exist." });
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                return new JsonResult(new { success = false, message = ex.Message });
             }
             catch (Exception ex)
             {
-                CreateErrorMessage = $"Lỗi hệ thống: {ex.Message}";
-                await LoadDataAsync();
-                return Page();
+                return new JsonResult(new { success = false, message = $"System Error: {ex.Message}" });
             }
         }
+
 
 
 
@@ -133,23 +110,19 @@ namespace DataLabelingSupportSystem.UI.Pages.Admin
             ModelState.Clear();
 
             if (UpdateUserInput == null || UpdateUserInput.UserId <= 0)
-            {
-                ModelState.AddModelError("", "UserId không hợp lệ.");
-                await LoadDataAsync();
-                return Page();
-            }
+                return new JsonResult(new { success = false, message = "Invalid UserId." });
 
             if (UpdateUserInput.RoleId <= 0)
-                ModelState.AddModelError(nameof(UpdateUserInput.RoleId), "Vui lòng chọn vai trò.");
+                ModelState.AddModelError(nameof(UpdateUserInput.RoleId), "Please select a role.");
 
             if (!string.IsNullOrWhiteSpace(UpdateUserInput.Name) && UpdateUserInput.Name.Length < 2)
-                ModelState.AddModelError(nameof(UpdateUserInput.Name), "Tên phải có ít nhất 2 ký tự.");
+                ModelState.AddModelError(nameof(UpdateUserInput.Name), "Name must be at least 2 characters.");
 
             if (!string.IsNullOrWhiteSpace(UpdateUserInput.Email))
             {
                 if (!UpdateUserInput.Email.Contains("@") || !UpdateUserInput.Email.Contains("."))
                 {
-                    ModelState.AddModelError(nameof(UpdateUserInput.Email), "Email không hợp lệ.");
+                    ModelState.AddModelError(nameof(UpdateUserInput.Email), "Invalid email.");
                 }
                 else
                 {
@@ -158,48 +131,37 @@ namespace DataLabelingSupportSystem.UI.Pages.Admin
                     {
                         if (await _userService.EmailExistsAsync(UpdateUserInput.Email, UpdateUserInput.UserId))
                         {
-                            ModelState.AddModelError(nameof(UpdateUserInput.Email), "Email này đã được sử dụng.");
+                            ModelState.AddModelError(nameof(UpdateUserInput.Email), "This email is already in use.");
                         }
                     }
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(UpdateUserInput.Phone))
-            {
-                if (!UpdateUserInput.Phone.All(char.IsDigit) || UpdateUserInput.Phone.Length != 10)
-                    ModelState.AddModelError(nameof(UpdateUserInput.Phone), "Số điện thoại phải đúng 10 số.");
-            }
-
             if (!ModelState.IsValid)
             {
-                await LoadDataAsync();
-                UpdateErrorMessage = "Vui lòng kiểm tra lại thông tin đã nhập.";
-                return Page();
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return new JsonResult(new { success = false, message = "Please check the entered information.", errors });
             }
 
             try
             {
                 var result = await _userService.UpdateUserAsync(UpdateUserInput);
-
                 if (result)
                 {
-                    TempData["UpdateSuccessMessage"] = "Cập nhật user thành công!";
-                    return RedirectToPage("./ListOfUser", new { Search, RoleId });
+                    TempData["UpdateSuccessMessage"] = "User updated successfully!";
+                    return new JsonResult(new { success = true, message = "User updated successfully!" });
                 }
                 else
                 {
-                    UpdateErrorMessage = "Không thể cập nhật user.";
-                    await LoadDataAsync();
-                    return Page();
+                    return new JsonResult(new { success = false, message = "Could not update user." });
                 }
             }
             catch (Exception ex)
             {
-                UpdateErrorMessage = $"Lỗi: {ex.Message}";
-                await LoadDataAsync();
-                return Page();
+                return new JsonResult(new { success = false, message = $"Error: {ex.Message}" });
             }
         }
+
 
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {
@@ -208,19 +170,19 @@ namespace DataLabelingSupportSystem.UI.Pages.Admin
                 var result = await _userService.DeleteUserAsync(id);
                 if (result)
                 {
-                    TempData["DeleteSuccessMessage"] = "Xóa user thành công!";
+                    TempData["DeleteSuccessMessage"] = "User deleted successfully!";
                     return RedirectToPage("./ListOfUser", new { Search, RoleId });
                 }
                 else
                 {
-                    DeleteSuccessMessage = "Không thể xóa user.";
+                    DeleteSuccessMessage = "Could not delete user.";
                     await LoadDataAsync();
                     return Page();
                 }
             }
             catch (Exception ex)
             {
-                DeleteSuccessMessage = $"Lỗi: {ex.Message}";
+                DeleteSuccessMessage = $"Error: {ex.Message}";
                 await LoadDataAsync();
                 return Page();
             }

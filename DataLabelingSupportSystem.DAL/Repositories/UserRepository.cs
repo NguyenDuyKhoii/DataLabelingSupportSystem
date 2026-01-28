@@ -12,7 +12,7 @@ namespace DataLabelingSupportSystem.DAL.Interfaces
         private readonly AppDbContext _db;
         public UserRepository(AppDbContext db) => _db = db;
 
-        // Auth hiện tại (giữ nguyên)
+        // Authentication (keep as is)
         public Task<User?> GetByUsernameAsync(string username)
             => _db.Users.Include(u => u.Role)
                        .FirstOrDefaultAsync(u => u.Username == username);
@@ -26,7 +26,7 @@ namespace DataLabelingSupportSystem.DAL.Interfaces
             await _db.SaveChangesAsync();
         }
 
-        // THÊM CRUD methods
+        // ADD CRUD methods
         public async Task<List<User>> GetAllUsersAsync()
             => await _db.Users
                        .Include(u => u.Role)
@@ -62,7 +62,7 @@ namespace DataLabelingSupportSystem.DAL.Interfaces
 
         public async Task SaveUserAsync(User user)
         {
-            // Entity đã được track từ GetUserByIdAsync, chỉ cần save
+            // Entity is already tracked from GetUserByIdAsync, just save
             await _db.SaveChangesAsync();
         }
 

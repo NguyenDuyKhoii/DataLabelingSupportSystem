@@ -5,15 +5,15 @@ namespace DataLabelingSupportSystem.DTOs
     // Create DTO
     public class CreateUserDto
     {
-        [Required(ErrorMessage = "Username bắt buộc")]
+        [Required(ErrorMessage = "Username is required")]
         [MinLength(3)]
         public string Username { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Password bắt buộc")]
+        [Required(ErrorMessage = "Password is required")]
         [MinLength(6)]
         public string Password { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Tên bắt buộc")]
+        [Required(ErrorMessage = "Name is required")]
         public string Name { get; set; } = string.Empty;
 
         [EmailAddress]
