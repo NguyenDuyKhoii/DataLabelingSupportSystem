@@ -36,10 +36,10 @@ namespace DataLabelingSupportSystem.BLL.Services
         public async Task<AuthUserDto> RegisterAsync(RegisterUserDto req)
         {
             if (await _users.UsernameExistsAsync(req.Username))
-                throw new InvalidOperationException("Username đã tồn tại.");
+                throw new InvalidOperationException("Username already exists.");
 
-            const int defaultRoleId = 3;          // Annotator (theo DB của bạn)
-            const string defaultRoleName = "Annotator"; // để trả về DTO
+            const int defaultRoleId = 3;          // Annotator (per your DB)
+            const string defaultRoleName = "Annotator"; // for DTO return
 
             var user = new User
             {
@@ -50,7 +50,7 @@ namespace DataLabelingSupportSystem.BLL.Services
 
             user.Password = _hasher.HashPassword(user, req.Password); 
 
-            await _users.AddAsync(user); // repo tự SaveChanges
+            await _users.AddAsync(user); // repo handles SaveChanges
 
             return new AuthUserDto(user.UserId, user.Username, user.Name, defaultRoleName);
         }

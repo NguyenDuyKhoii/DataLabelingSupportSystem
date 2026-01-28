@@ -1,0 +1,517 @@
+﻿@page
+@model DataLabelingSupportSystem.UI.Pages.Admin.ListOfUserModel
+@{
+    ViewData["Title"] = "User Managerment";
+}
+
+<div class="container-fluid">
+    <!-- Success Messages -->
+    @if (!string.IsNullOrEmpty(Model.UpdateSuccessMessage) || TempData["UpdateSuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @(Model.UpdateSuccessMessage ?? TempData["UpdateSuccessMessage"]?.ToString())
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.DeleteSuccessMessage) || TempData["DeleteSuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @(Model.DeleteSuccessMessage ?? TempData["DeleteSuccessMessage"]?.ToString())
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="fas fa-users"></i> User Management
+            <span class="badge bg-primary">@Model.Users.Count</span>
+        </h2>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createUserModal">
+            <i class="fas fa-plus"></i> Add New User
+        </button>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">🔍 Search</label>
+                    <input type="text" class="form-control" name="Search"
+                           value="@Model.Search" placeholder="Username, Name, Email..." />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Role</label>
+                    <select name="RoleId" class="form-select" asp-items="Model.RoleList">
+                        <option value="">-- All --</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a asp-page="./ListOfUser" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 60px">#</th>
+                            <th>Username</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Created At</th>
+                            <th style="min-width: 260px;" class="text-center">Action</th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Users.Any())
+                        {
+                            int stt = 1;
+                            @foreach (var user in Model.Users)
+                            {
+                                <tr>
+                                    <td>@stt</td>
+                                    <td>
+                                        <strong>@user.Username</strong>
+                                    </td>
+                                    <td>@user.Name</td>
+                                    <td>@user.Email</td>
+                                    <td>
+                                        @{
+                                            string badgeClass = user.RoleName switch
+                                            {
+                                                "Admin" => "bg-danger",
+                                                "Manager" => "bg-warning text-dark",
+                                                "Reviewer" => "bg-info",
+                                                "Annotator" => "bg-secondary",
+                                                _ => "bg-light text-dark"
+                                            };
+                                        }
+                                        <span class="badge @badgeClass">
+                                            @user.RoleName
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">@user.CreatedAt.ToString("dd/MM HH:mm")</small>
+                                    </td>
+                                    <td style="min-width: 250px;">
+                                        <!-- Tăng độ rộng cột để chứa đủ 3 nút -->
+                                        <div class="d-flex gap-2">
+                                            <!-- Dùng flex và gap để tách các nút ra -->
+                                            <!-- NÚT XEM CHI TIẾT -->
+                                            <button type="button" class="btn btn-info btn-sm text-white d-flex align-items-center gap-1"
+                                                    title="Xem chi tiết"
+                                                    onclick="viewUserDetails('@user.Username', '@user.Name', '@user.Email', '@(user.Phone ?? "")', '@user.RoleName', @user.IsActive.ToString().ToLower(), '@user.CreatedAt.ToString("dd/MM/yyyy HH:mm")')">
+                                                <i class="fas fa-eye"></i> <span>View</span>
+                                            </button>
+
+                                            <!-- NÚT SỬA -->
+                                            <button type="button" class="btn btn-warning btn-sm d-flex align-items-center gap-1"
+                                                    title="Cập nhật thông tin"
+                                                    onclick="loadUserForEdit(@user.UserId, '@user.Username', '@user.Name', '@user.Email', '@(user.RoleName)', @user.RoleId, '@(user.Phone ?? "")', @user.IsActive.ToString().ToLower())">
+                                                <i class="fas fa-edit"></i> <span>Edit</span>
+                                            </button>
+
+                                            <!-- NÚT XÓA -->
+                                            <form method="post" asp-page-handler="Delete" asp-route-id="@user.UserId"
+                                                  onsubmit="return confirm('Are you sure you want to delete user [@user.Username]? This action will set the status to Inactive.');"
+                                                  class="d-inline">
+                                                <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-1" title="Xóa tài khoản">
+                                                    <i class="fas fa-trash-alt"></i> <span>Delete</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                stt++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fas fa-users fa-3x mb-3 opacity-50"></i>
+                                        <h5>Không tìm thấy User nào</h5>
+                                        <p class="mb-0">Thử thay đổi bộ lọc hoặc <button type="button" class="btn btn-link p-0" data-bs-toggle="modal" data-bs-target="#createUserModal">tạo user mới</button></p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: XEM CHI TIẾT USER                   -->
+<!-- ========================================== -->
+<div class="modal fade" id="viewUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-id-card"></i> Detailed Information
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 80px; height: 80px;">
+                        <i class="fas fa-user fa-3x text-secondary"></i>
+                    </div>
+                    <h5 id="viewDisplayUsername" class="mb-0"></h5>
+                    <span id="viewDisplayRole" class="badge bg-primary"></span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label small text-muted">Full Name</label>
+                        <input type="text" class="form-control bg-white" id="viewName" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted">Phone Number</label>
+                        <input type="text" class="form-control bg-white" id="viewPhone" readonly />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Email</label>
+                        <input type="text" class="form-control bg-white" id="viewEmail" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted">Status</label>
+                        <input type="text" class="form-control bg-white" id="viewStatus" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted">Created Date</label>
+                        <input type="text" class="form-control bg-white" id="viewCreatedAt" readonly />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: CREATE USER                         -->
+<!-- ========================================== -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="createUserModalLabel">
+                    <i class="fas fa-user-plus"></i> Add New User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Create" id="createUserForm">
+                <div class="modal-body">
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="display:none;">
+                        <i class="fas fa-exclamation-circle"></i> <span class="error-msg"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+
+
+
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.Username" class="form-label">
+                                Username <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="CreateUserInput.Username" class="form-control"
+                                   placeholder="Enter username" required />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.Password" class="form-label">
+                                Password <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="CreateUserInput.Password" type="password" class="form-control"
+                                   placeholder="Minimum 6 characters" required />
+                            <div class="form-text">Minimum 6 characters</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.Name" class="form-label">
+                                Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="CreateUserInput.Name" class="form-control"
+                                   placeholder="Enter full name" required />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.Email" class="form-label">
+                                Email
+                            </label>
+                            <input asp-for="CreateUserInput.Email" type="email" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.Phone" class="form-label">
+                                Phone
+                            </label>
+                            <input asp-for="CreateUserInput.Phone" type="tel" class="form-control" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CreateUserInput.RoleId" class="form-label">
+                                Role <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="CreateUserInput.RoleId" asp-items="Model.RoleList"
+                                    class="form-select" required>
+                                <option value="">-- Select role --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Create User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: UPDATE USER                         -->
+<!-- ========================================== -->
+<div class="modal fade" id="updateUserModal" tabindex="-1" aria-labelledby="updateUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="updateUserModalLabel">
+                    <i class="fas fa-user-edit"></i> Update User
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Update" id="updateUserForm">
+                <input type="hidden" asp-for="UpdateUserInput.UserId" id="updateUserId" />
+                <div class="modal-body">
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="display:none;">
+                        <i class="fas fa-exclamation-circle"></i> <span class="error-msg"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+
+
+
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Username
+                        </label>
+                        <input type="text" class="form-control" id="updateUsername" readonly disabled />
+                        <div class="form-text">Username cannot be changed</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="UpdateUserInput.Name" class="form-label">
+                                Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="UpdateUserInput.Name" class="form-control"
+                                   id="updateName" placeholder="Enter full name" required />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="UpdateUserInput.Email" class="form-label">
+                                Email
+                            </label>
+                            <input asp-for="UpdateUserInput.Email" type="email" class="form-control"
+                                   id="updateEmail" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="UpdateUserInput.Phone" class="form-label">
+                                Phone
+                            </label>
+                            <input asp-for="UpdateUserInput.Phone" type="tel" class="form-control"
+                                   id="updatePhone" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="UpdateUserInput.RoleId" class="form-label">
+                                Role <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="UpdateUserInput.RoleId" asp-items="Model.RoleList"
+                                    class="form-select" id="updateRoleId" required>
+                                <option value="">-- Select role --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="UpdateUserInput.IsActive" class="form-check-input"
+                                   type="checkbox" id="updateIsActive" />
+                            <label class="form-check-label" for="updateIsActive">
+                                Activate Account
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Success Message -->
+@if (!string.IsNullOrEmpty(Model.DeleteSuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3"
+         role="alert" style="z-index: 9999;">
+        <i class="fas fa-check-circle"></i> @Model.DeleteSuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Global utility functions
+        function viewUserDetails(username, name, email, phone, roleName, isActive, createdAt) {
+            document.getElementById('viewDisplayUsername').innerText = username;
+            document.getElementById('viewDisplayRole').innerText = roleName;
+            document.getElementById('viewName').value = name || 'Not updated';
+            document.getElementById('viewEmail').value = email || 'Not updated';
+            document.getElementById('viewPhone').value = phone || 'Not updated';
+            document.getElementById('viewCreatedAt').value = createdAt;
+
+            var statusInput = document.getElementById('viewStatus');
+            if (isActive === true || isActive === 'true') {
+                statusInput.value = 'Active';
+                statusInput.classList.remove('text-danger');
+                statusInput.classList.add('text-success', 'fw-bold');
+            } else {
+                statusInput.value = 'Locked / Inactive';
+                statusInput.classList.remove('text-success');
+                statusInput.classList.add('text-danger', 'fw-bold');
+            }
+
+            var modalElem = document.getElementById('viewUserModal');
+            var viewModal = bootstrap.Modal.getOrCreateInstance(modalElem);
+            viewModal.show();
+        }
+
+        function loadUserForEdit(userId, username, name, email, roleName, roleId, phone, isActive) {
+            document.getElementById('updateUserId').value = userId;
+            document.getElementById('updateName').value = name || '';
+            document.getElementById('updateEmail').value = email || '';
+            document.getElementById('updatePhone').value = phone || '';
+            document.getElementById('updateRoleId').value = roleId || '';
+            document.getElementById('updateIsActive').checked = (isActive === true || isActive === 'true');
+            document.getElementById('updateUsername').value = username || '';
+
+            var modalElem = document.getElementById('updateUserModal');
+            var updateModal = bootstrap.Modal.getOrCreateInstance(modalElem);
+            updateModal.show();
+        }
+
+        // Wait for DOM to load
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Reset form when modal is closed
+            function setupModalReset(modalId, formId) {
+                var modalElem = document.getElementById(modalId);
+                if (!modalElem) return;
+                
+                modalElem.addEventListener('hidden.bs.modal', function () {
+                    var form = document.getElementById(formId);
+                    if (form) {
+                        form.reset();
+                    }
+                    var alertDiv = modalElem.querySelector('.alert-danger');
+                    if (alertDiv) alertDiv.style.display = 'none';
+                });
+            }
+
+            setupModalReset('createUserModal', 'createUserForm');
+            setupModalReset('updateUserModal', 'updateUserForm');
+
+            // Handle form submission via Fetch (AJAX)
+            function handleFormSubmit(formId, modalId, handlerName) {
+                var form = document.getElementById(formId);
+                if (!form) return;
+
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault(); // PREVENT DEFAULT FORM SUBMISSION
+                    e.stopPropagation();
+
+                    var formData = new FormData(form);
+                    var url = window.location.pathname + '?handler=' + handlerName;
+
+                    fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Success -> Reload to update the list
+                            window.location.reload();
+                        } else {
+                            // Failure -> Show error in modal
+                            var modalElem = document.getElementById(modalId);
+                            var alertDiv = modalElem.querySelector('.alert-danger');
+                            var errorSpan = modalElem.querySelector('.error-msg');
+                            
+                            var errorText = data.message;
+                            if (data.errors && data.errors.length > 0) {
+                                errorText += "<ul class='mb-0 mt-2'>" + data.errors.map(err => "<li>" + err + "</li>").join('') + "</ul>";
+                            }
+                            
+                            if (errorSpan) errorSpan.innerHTML = errorText;
+                            if (alertDiv) alertDiv.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert("An error occurred: " + error.message);
+                    });
+                });
+            }
+
+            handleFormSubmit('createUserForm', 'createUserModal', 'Create');
+            handleFormSubmit('updateUserForm', 'updateUserModal', 'Update');
+        });
+    </script>
+}

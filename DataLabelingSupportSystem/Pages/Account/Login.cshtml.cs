@@ -57,7 +57,8 @@ public class LoginModel : PageModel
 
         string roleHome = user.RoleName switch
         {
-            "Admin" => "/Admin",
+            // Admin goes directly to ListOfUser page
+            "Admin" => "/Admin/ListOfUser",
             "Annotator" => "/Annotator",
             "Manager" => "/Manager",
             "Reviewer" => "/Reviewer",

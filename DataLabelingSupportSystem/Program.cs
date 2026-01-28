@@ -13,10 +13,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Razor Pages + Authorization conventions
 builder.Services.AddRazorPages(options =>
 {
-    // Cho phép vào các trang Account (Login/Register/Logout/AccessDenied...)
+    // Allow access to Account pages (Login/Register/Logout/AccessDenied...)
     options.Conventions.AllowAnonymousToFolder("/Account"); 
 
-    // Khóa theo role cho từng khu vực
+    // Role-based authorization for each folder
     options.Conventions.AuthorizeFolder("/Admin", "AdminOnly");
     options.Conventions.AuthorizeFolder("/Annotator", "AnnotatorOnly");
     options.Conventions.AuthorizeFolder("/Manager", "ManagerOnly");
@@ -30,6 +30,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // 2) DI layers
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
@@ -70,8 +71,8 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Mặc định toàn bộ Razor Pages phải đăng nhập,
-// nhưng /Account đã được AllowAnonymousToFolder nên vẫn truy cập được. [web:38]
+// By default all Razor Pages require login,
+// but /Account has been allowed anonymous access in its folder.
 app.MapRazorPages().RequireAuthorization();
 
 app.Run();
