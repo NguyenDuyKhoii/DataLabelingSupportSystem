@@ -12,6 +12,8 @@ namespace DataLabelingSupportSystem.DAL.Models
 
         public int ProjectId { get; set; }
         public Project Project { get; set; } = null!;
+        public int Width { get; set; }  
+        public int Height { get; set; }
 
         public string ImagePath { get; set; } = null!;
 

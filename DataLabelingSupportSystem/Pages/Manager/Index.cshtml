@@ -1,14 +1,73 @@
 ﻿@page
 @model DataLabelingSupportSystem.UI.Pages.Manager.IndexModel
 @{
-    ViewData["Title"] = "Manager Dashboard";
+    ViewData["Title"] = "Project Management";
 }
 
-<h2>Manager Dashboard</h2>
-<p>Welcome, @User.Identity?.Name</p>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>My Projects</h2>
+        <a asp-page="/Manager/CreateProject" class="btn btn-success">
+            + Create New Project
+        </a>
+    </div>
 
-<ul>
-    <li>Create / assign tasks</li>
-    <li>Monitor team progress</li>
-    <li>Export reports</li>
-</ul>
+    @if (Model.Projects.Count == 0)
+    {
+        <div class="alert alert-info">
+            You don't have any projects yet. Create your first project now!
+        </div>
+    }
+    else
+    {
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Project Name</th>
+                    <th>Status</th> 
+                    <th>Created Date</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Projects)
+                {
+                    <tr>
+                        <td>@item.Id</td>
+                        <td class="fw-bold">@item.Name</td>
+                        
+                        <td>
+                            @* Colorize project status *@
+                            @if(item.Status == "New") 
+                            { 
+                                <span class="badge bg-primary">New</span> 
+                            }
+                            else if(item.Status == "InProgress") 
+                            { 
+                                <span class="badge bg-warning text-dark">In Progress</span> 
+                            }
+                            else 
+                            { 
+                                <span class="badge bg-success">Completed</span> 
+                            }
+                        </td>
+
+                        <td>@item.CreatedDate.ToString("dd/MM/yyyy")</td>
+                        <td>@item.Description</td>
+                        <td>
+                            <a asp-page="/Manager/Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">
+                                Manage (Images / Labels)
+                            </a>
+
+                            <a asp-page="/Manager/EditProject" asp-route-id="@item.Id" class="btn btn-sm btn-warning">
+                                Edit
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
