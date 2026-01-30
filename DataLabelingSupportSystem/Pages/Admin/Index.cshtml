@@ -4,11 +4,67 @@
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<h2>Admin Dashboard</h2>
-<p>Welcome, @User.Identity?.Name</p>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-title">Users</div>
+            <div class="stat-value">—</div>
+            <div class="stat-meta">View & manage</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-title">Projects</div>
+            <div class="stat-value">—</div>
+            <div class="stat-meta">Across system</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-title">Data Items</div>
+            <div class="stat-value">—</div>
+            <div class="stat-meta">Storage overview</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-title">System</div>
+            <div class="stat-value">OK</div>
+            <div class="stat-meta">No alerts</div>
+        </div>
+    </div>
+</div>
 
-<ul>
-    <li>Manage users / roles</li>
-    <li>Manage projects / datasets</li>
-    <li>System settings</li>
-</ul>
+<div class="row g-3">
+    <div class="col-12 col-xl-8">
+        <div class="dash-card">
+            <div class="dash-card-h d-flex align-items-center justify-content-between">
+                <div class="fw-semibold">Welcome, @User.Identity?.Name</div>
+                <a asp-page="/Admin/ListOfUser" class="btn btn-primary">
+                    <i class="bi bi-people"></i> Manage Users
+                </a>
+            </div>
+            <div class="dash-card-b">
+                <ul class="mb-0">
+                    <li>Manage users / roles</li>
+                    <li>Manage projects / datasets</li>
+                    <li>System settings</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+        <div class="dash-card">
+            <div class="dash-card-h fw-semibold">Shortcuts</div>
+            <div class="dash-card-b d-grid gap-2">
+                <a asp-page="/Admin/ListOfUser" class="btn btn-outline-secondary">
+                    <i class="bi bi-person-gear"></i> Users
+                </a>
+                <a asp-page="/Admin/Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-gear"></i> Settings (later)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
