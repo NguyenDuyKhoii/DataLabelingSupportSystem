@@ -11,17 +11,24 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
         private readonly IProjectService _projectService;
         private readonly ILabelService _labelService;
         private readonly IDataItemService _dataItemService;
+        private readonly ITaskService _taskService;
+        private readonly IUserService _userService;
 
-        public DetailsModel(IProjectService projectService, ILabelService labelService, IDataItemService dataItemService)
+        public DetailsModel(IProjectService projectService, ILabelService labelService, IDataItemService dataItemService, ITaskService taskService, IUserService userService)
         {
             _projectService = projectService;
             _labelService = labelService;
             _dataItemService = dataItemService;
+            _taskService = taskService;
+            _userService = userService;
         }
 
         public ProjectViewDto Project { get; set; } = null!;
         public List<LabelViewDto> Labels { get; set; } = new();
         public List<string> ImageUrls { get; set; } = new();
+        public List<DataItemDto> ProjectDataItems { get; set; } = new();
+        public List<TaskViewDto> Tasks { get; set; } = new();
+        public List<DataLabelingSupportSystem.DTOs.UserDto> Annotators { get; set; } = new();
 
         [BindProperty]
         public CreateLabelDto NewLabel { get; set; } = new();
@@ -37,6 +44,9 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
 
             Labels = await _labelService.GetLabelsByProjectIdAsync(id);
             ImageUrls = await _dataItemService.GetImagesByProjectIdAsync(id);
+            ProjectDataItems = await _dataItemService.GetDataItemsByProjectIdAsync(id);
+            Tasks = await _taskService.GetTasksByProjectIdAsync(id);
+            Annotators = await _userService.GetUsersAsync(roleId: 3); // 3 is Annotator using the seeded RoleId
             return Page();
         }
 
@@ -82,6 +92,25 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
                 await _dataItemService.UploadImagesAsync(UploadFiles, id);
             }
             return RedirectToPage("Details", new { id = id });
+        }
+
+        public async Task<IActionResult> OnPostCreateTaskAsync(int projectId, int annotatorId, List<int> dataItemIds)
+        {
+            if (dataItemIds == null || !dataItemIds.Any() || annotatorId == 0)
+            {
+                ModelState.AddModelError(string.Empty, "Please select an Annotator and at least one Image.");
+                return await OnGetAsync(projectId);
+            }
+
+            var dto = new CreateTaskDto
+            {
+                ProjectId = projectId,
+                AnnotatorId = annotatorId,
+                DataItemIds = dataItemIds
+            };
+
+            await _taskService.CreateTaskAsync(dto);
+            return RedirectToPage("Details", new { id = projectId });
         }
     }
 }
