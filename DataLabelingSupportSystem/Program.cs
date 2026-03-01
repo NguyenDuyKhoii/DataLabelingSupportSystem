@@ -43,6 +43,9 @@ builder.Services.AddScoped<ILabelService, LabelService>();
 builder.Services.AddScoped<IDataItemService, DataItemService>();
 builder.Services.AddScoped<IDataItemRepository, DataItemRepository>();
 
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+
 // 3) AuthN (Cookie)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

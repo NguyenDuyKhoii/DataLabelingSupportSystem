@@ -13,5 +13,6 @@ namespace DataLabelingSupportSystem.BLL.Interface
 
         
         Task<List<string>> GetImagesByProjectIdAsync(int projectId);
+        Task<List<DataLabelingSupportSystem.BLL.DTO.DataItemDto>> GetDataItemsByProjectIdAsync(int projectId);
     }
 }

@@ -41,6 +41,16 @@ namespace DataLabelingSupportSystem.BLL.Services
             return items.Select(x => x.ImagePath).ToList();
         }
 
+        public async Task<List<DataLabelingSupportSystem.BLL.DTO.DataItemDto>> GetDataItemsByProjectIdAsync(int projectId)
+        {
+            var items = await _repo.GetByProjectIdAsync(projectId);
+            return items.Select(x => new DataLabelingSupportSystem.BLL.DTO.DataItemDto
+            {
+                DataItemId = x.DataItemId,
+                ImagePath = x.ImagePath
+            }).ToList();
+        }
+
         public async  Task UploadImagesAsync(List<IFormFile> files, int projectId)
         {
             var dataItems = new List<DataItem>();
