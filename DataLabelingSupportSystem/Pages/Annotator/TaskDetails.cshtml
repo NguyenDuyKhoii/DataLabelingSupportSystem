@@ -43,9 +43,12 @@
                                 </a>
                                 <div class="card-body p-3 text-center d-flex flex-column justify-content-between">
                                     <small class="text-muted mb-2">Item ID: @item.DataItemId</small>
-                                    <button class="btn btn-sm btn-outline-primary w-100 mt-auto">
-                                        <i class="bi bi-pencil-square"></i> Annotate Now
-                                    </button>
+                                    <a asp-page="/Annotator/Annotate"
+                                       asp-route-taskItemId="@item.TaskItemId"
+                                       class="btn btn-primary btn-sm w-100 mt-auto d-flex align-items-center justify-content-center gap-2">
+                                        <i class="bi bi-bounding-box"></i>
+                                        <span>Annotate</span>
+                                    </a>
                                 </div>
                             </div>
                         </div>

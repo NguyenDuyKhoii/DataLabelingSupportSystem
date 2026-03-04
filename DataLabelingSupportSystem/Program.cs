@@ -46,6 +46,8 @@ builder.Services.AddScoped<IDataItemRepository, DataItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 
+builder.Services.AddScoped<IAnnotationService, AnnotationService>();
+
 // 3) AuthN (Cookie)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

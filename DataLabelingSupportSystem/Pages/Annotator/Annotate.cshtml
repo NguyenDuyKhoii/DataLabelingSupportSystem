@@ -1,0 +1,494 @@
+﻿@page "{taskItemId:int}"
+@model DataLabelingSupportSystem.UI.Pages.Annotator.AnnotateModel
+@{
+    ViewData["Title"] = "Annotate";
+}
+
+<div class="container py-4">
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <h3 class="mb-0">Annotation</h3>
+            <small class="text-muted">Draw bounding boxes and assign labels</small>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a asp-page="/Annotator/Index" class="btn btn-outline-secondary btn-sm">
+                &larr; Back
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- LEFT: image + draw overlay -->
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <div class="fw-semibold">Image</div>
+                        <div class="text-muted small">
+                            TaskItemId: <span class="fw-semibold">@Model.TaskItemId</span>
+                        </div>
+                    </div>
+
+                    <div class="border rounded mt-2 p-2 bg-light">
+                        <div id="imgWrap" style="position:relative; width:100%; max-height:520px;">
+                            <img id="annotImage"
+                                 src="@Model.Vm.Item.ImagePath"
+                                 class="img-fluid rounded"
+                                 style="max-height:520px; width:100%; object-fit:contain; display:block;"
+                                 alt="Data Item" />
+
+                            <!-- overlay để vẽ bbox -->
+                            <div id="overlay"
+                                 style="position:absolute; inset:0; cursor:crosshair;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-muted small mt-2">
+                        Cách dùng: chọn label bên phải → kéo thả chuột trên ảnh để tạo bbox.
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: labels + save + list -->
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="fw-semibold mb-2">Labels</div>
+
+                    @if (Model.Vm.Labels == null || !Model.Vm.Labels.Any())
+                    {
+                        <div class="text-muted small">No labels found.</div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var l in Model.Vm.Labels)
+                            {
+                                <label class="d-flex align-items-center gap-2 border rounded p-2">
+                                    <input type="radio" name="selectedLabelId" value="@l.Id" />
+                                    <span class="rounded-circle border"
+                                          style="width:14px;height:14px;display:inline-block;background:@(l.Color ?? "#000000");">
+                                    </span>
+                                    <span class="fw-semibold">@l.Name</span>
+                                    <span class="ms-auto text-muted small">@l.Color</span>
+                                </label>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="fw-semibold">Actions</div>
+
+                        <div class="d-flex gap-1 align-items-center">
+                            @if (!string.IsNullOrWhiteSpace(Model.Vm?.SubmissionStatus))
+                            {
+                                <span class="badge text-bg-light border">@Model.Vm.SubmissionStatus</span>
+                            }
+                            @if (Model.Vm?.SubmittedAt != null)
+                            {
+                                <span class="badge text-bg-light border">
+                                    @Model.Vm.SubmittedAt.Value.ToString("yyyy-MM-dd HH:mm")
+                                </span>
+                            }
+                            @if (Model.Vm != null && !Model.Vm.CanEdit)
+                            {
+                                <span class="badge text-bg-warning border">Read-only</span>
+                            }
+                        </div>
+                    </div>
+
+                    <form id="saveForm" method="post" asp-page-handler="Save">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="TaskItemId" value="@Model.TaskItemId" />
+                        <input type="hidden" id="BoxesJson" name="BoxesJson" value="" />
+                        <button type="button"
+                                id="btnSave"
+                                class="btn btn-primary w-100"
+                                @(Model.Vm != null && !Model.Vm.CanEdit ? "disabled" : "")>
+                            Save
+                        </button>
+                    </form>
+
+                    <button type="button"
+                            id="btnSubmit"
+                            class="btn btn-success w-100 mt-2"
+                            @(Model.Vm != null && !Model.Vm.CanEdit ? "disabled" : "")>
+                        Submit
+                    </button>
+
+                    <div class="text-muted small mt-2">
+                        Save: lưu toàn bộ bbox hiện tại.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="fw-semibold">Annotations</div>
+                        <span class="badge text-bg-light border" id="boxCount">0</span>
+                    </div>
+
+                    <div id="boxesList" class="list-group small"></div>
+
+                    <div class="mt-2 d-flex gap-2">
+                        <button type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                id="btnClearBoxes"
+                                @(Model.Vm != null && !Model.Vm.CanEdit ? "disabled" : "")>
+                            Clear all
+                        </button>
+                    </div>
+
+                    <div class="text-muted small mt-2">
+                        Tip: box quá nhỏ sẽ bị bỏ qua.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const canEdit = @((Model.Vm != null && Model.Vm.CanEdit) ? "true" : "false");
+
+            const btnSave = document.getElementById('btnSave');
+            const form = document.getElementById('saveForm');
+            const boxesJsonEl = document.getElementById('BoxesJson');
+
+            const btnSubmit = document.getElementById('btnSubmit');
+            const overlay = document.getElementById('overlay');
+            const img = document.getElementById('annotImage');
+
+            const boxesListEl = document.getElementById('boxesList');
+            const boxCountEl = document.getElementById('boxCount');
+            const btnClearBoxes = document.getElementById('btnClearBoxes');
+
+            const taskItemId = @Model.TaskItemId;
+
+            if (!btnSave || !form || !boxesJsonEl || !overlay || !img) return;
+
+            // --- maps from server (JSON) to avoid TS warnings in VS ---
+            const labelMap = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                            (Model.Vm?.Labels ?? Enumerable.Empty<dynamic>())
+                                    .ToDictionary(x => (int)x.Id, x => (string)(x.Name ?? ""))
+                    ));
+
+        const labelColorMap = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                        (Model.Vm?.Labels ?? Enumerable.Empty<dynamic>())
+                                .ToDictionary(x => (int)x.Id, x => (string)(x.Color ?? "#000000"))
+                ));
+
+        // state boxes (normalized 0..1)
+        // box = { id, labelId, x, y, width, height }
+        let boxes = [];
+        let nextId = 1;
+
+            function getSelectedLabelId() {
+                const el = document.querySelector('input[name="selectedLabelId"]:checked');
+                if (!el) return null;
+                return Number(el.value);
+            }
+
+            function clamp01(v) {
+                return Math.max(0, Math.min(1, v));
+            }
+
+            function hexToRgba(hex, alpha) {
+                if (!hex) return `rgba(0,0,0,${alpha})`;
+                let h = String(hex).trim();
+                if (h[0] === '#') h = h.slice(1);
+                if (h.length === 3) h = h.split('').map(c => c + c).join('');
+                if (h.length !== 6) return `rgba(0,0,0,${alpha})`;
+
+                const r = parseInt(h.slice(0, 2), 16);
+                const g = parseInt(h.slice(2, 4), 16);
+                const b = parseInt(h.slice(4, 6), 16);
+                return `rgba(${r},${g},${b},${alpha})`;
+            }
+
+            function clearOverlayRects() {
+                overlay.querySelectorAll('.bbox-rect').forEach(x => x.remove());
+            }
+
+            function renderOverlay() {
+                clearOverlayRects();
+
+                const overlayRect = overlay.getBoundingClientRect();
+                const w = overlayRect.width;
+                const h = overlayRect.height;
+
+                for (const b of boxes) {
+                    const rect = document.createElement('div');
+                    rect.className = 'bbox-rect';
+                    rect.dataset.id = b.id;
+
+                    rect.style.position = 'absolute';
+                    rect.style.left = (b.x * w) + 'px';
+                    rect.style.top = (b.y * h) + 'px';
+                    rect.style.width = (b.width * w) + 'px';
+                    rect.style.height = (b.height * h) + 'px';
+
+                    const color = labelColorMap[b.labelId] || '#0d6efd';
+                    rect.style.border = `2px solid ${color}`;
+                    rect.style.background = hexToRgba(color, 0.10);
+                    rect.style.boxSizing = 'border-box';
+
+                    overlay.appendChild(rect);
+                }
+            }
+
+            function renderList() {
+                boxesListEl.innerHTML = '';
+
+                if (boxes.length === 0) {
+                    boxesListEl.innerHTML = `<div class="text-muted small">No boxes yet.</div>`;
+                    boxCountEl.textContent = '0';
+                    return;
+                }
+
+                boxCountEl.textContent = String(boxes.length);
+
+                for (const b of boxes) {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item d-flex justify-content-between align-items-start';
+
+                    const left = document.createElement('div');
+                    left.className = 'me-2';
+                    const color = labelColorMap[b.labelId] || '#0d6efd';
+
+                    left.innerHTML = `
+                       <div class="d-flex align-items-center gap-2">
+                         <span class="rounded-circle border" style="width:10px;height:10px;display:inline-block;background:${color};"></span>
+                         <div><b>#${b.id}</b> • Label: <b>${labelMap[b.labelId] || ('#' + b.labelId)}</b></div>
+                       </div>
+                       <div class="text-muted">
+                          x=${b.x.toFixed(3)}, y=${b.y.toFixed(3)},
+                          w=${b.width.toFixed(3)}, h=${b.height.toFixed(3)}
+                        </div>
+                    `;
+
+                    const btnDel = document.createElement('button');
+                    btnDel.type = 'button';
+                    btnDel.className = 'btn btn-outline-danger btn-sm';
+                    btnDel.textContent = 'Delete';
+                    btnDel.disabled = !canEdit;
+                    btnDel.addEventListener('click', () => {
+                        if (!canEdit) return;
+                        boxes = boxes.filter(x => x.id !== b.id);
+                        renderOverlay();
+                        renderList();
+                    });
+
+                    item.appendChild(left);
+                    item.appendChild(btnDel);
+                    boxesListEl.appendChild(item);
+                }
+            }
+
+            async function loadSavedBoxes() {
+                try {
+                    const res = await fetch(`?handler=Boxes&taskItemId=${taskItemId}`, { method: 'GET' });
+                    const data = await res.json();
+
+                    if (!res.ok || !data.ok) return;
+
+                    const saved = Array.isArray(data.boxes) ? data.boxes : [];
+
+                    nextId = 1;
+                    boxes = saved.map(b => ({
+                        id: nextId++,
+                        labelId: Number(b.labelId ?? b.LabelId),
+                        x: Number(b.x ?? b.X),
+                        y: Number(b.y ?? b.Y),
+                        width: Number(b.width ?? b.Width),
+                        height: Number(b.height ?? b.Height)
+                    }));
+
+                    renderOverlay();
+                    renderList();
+                } catch (e) {
+                    console.warn('loadSavedBoxes failed', e);
+                }
+            }
+
+            // ========= DRAW LOGIC =========
+            let isDrawing = false;
+            let startX = 0, startY = 0;
+            let tempRect = null;
+
+            function overlayToNormalized(clientX, clientY) {
+                const r = overlay.getBoundingClientRect();
+                const x = (clientX - r.left) / r.width;
+                const y = (clientY - r.top) / r.height;
+                return { x: clamp01(x), y: clamp01(y) };
+            }
+
+            if (canEdit) {
+                overlay.addEventListener('mousedown', (e) => {
+                    const labelId = getSelectedLabelId();
+                    if (!labelId) {
+                        alert('Please select a label first.');
+                        return;
+                    }
+
+                    isDrawing = true;
+                    const p = overlayToNormalized(e.clientX, e.clientY);
+                    startX = p.x;
+                    startY = p.y;
+
+                    tempRect = document.createElement('div');
+                    tempRect.className = 'bbox-rect';
+                    tempRect.style.position = 'absolute';
+
+                    const color = labelColorMap[Number(labelId)] || '#198754';
+                    tempRect.style.border = `2px dashed ${color}`;
+                    tempRect.style.background = hexToRgba(color, 0.10);
+                    tempRect.style.boxSizing = 'border-box';
+                    overlay.appendChild(tempRect);
+                });
+
+                overlay.addEventListener('mousemove', (e) => {
+                    if (!isDrawing || !tempRect) return;
+
+                    const p = overlayToNormalized(e.clientX, e.clientY);
+                    const x1 = Math.min(startX, p.x);
+                    const y1 = Math.min(startY, p.y);
+                    const x2 = Math.max(startX, p.x);
+                    const y2 = Math.max(startY, p.y);
+
+                    const r = overlay.getBoundingClientRect();
+                    tempRect.style.left = (x1 * r.width) + 'px';
+                    tempRect.style.top = (y1 * r.height) + 'px';
+                    tempRect.style.width = ((x2 - x1) * r.width) + 'px';
+                    tempRect.style.height = ((y2 - y1) * r.height) + 'px';
+                });
+
+                window.addEventListener('mouseup', (e) => {
+                    if (!isDrawing) return;
+                    isDrawing = false;
+
+                    const labelId = getSelectedLabelId();
+                    if (!labelId) {
+                        if (tempRect) tempRect.remove();
+                        tempRect = null;
+                        return;
+                    }
+
+                    const p = overlayToNormalized(e.clientX, e.clientY);
+                    const x1 = Math.min(startX, p.x);
+                    const y1 = Math.min(startY, p.y);
+                    const x2 = Math.max(startX, p.x);
+                    const y2 = Math.max(startY, p.y);
+
+                    if (tempRect) tempRect.remove();
+                    tempRect = null;
+
+                    const width = x2 - x1;
+                    const height = y2 - y1;
+
+                    if (width < 0.01 || height < 0.01) return;
+
+                    boxes.push({
+                        id: nextId++,
+                        labelId: Number(labelId),
+                        x: x1, y: y1,
+                        width: width,
+                        height: height
+                    });
+
+                    renderOverlay();
+                    renderList();
+                });
+            } else {
+                overlay.style.cursor = 'not-allowed';
+            }
+
+            // ========= SAVE =========
+            btnSave.addEventListener('click', async function () {
+                if (!canEdit) return;
+
+                if (boxes.length === 0) {
+                    alert('No boxes to save.');
+                    return;
+                }
+
+                const dto = boxes.map(b => ({
+                    labelId: b.labelId,
+                    x: b.x, y: b.y,
+                    width: b.width, height: b.height
+                }));
+
+                boxesJsonEl.value = JSON.stringify(dto);
+
+                try {
+                    const res = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form)
+                    });
+
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.ok) {
+                        alert(data.error || ('Save failed. HTTP ' + res.status));
+                        return;
+                    }
+
+                    alert('Saved! submissionId = ' + data.submissionId);
+                } catch (e) {
+                    alert('Error: ' + e);
+                }
+            });
+
+            btnClearBoxes?.addEventListener('click', () => {
+                if (!canEdit) return;
+                boxes = [];
+                renderOverlay();
+                renderList();
+            });
+
+            // ========= SUBMIT =========
+            btnSubmit?.addEventListener('click', async function () {
+                if (!canEdit) return;
+
+                if (!confirm("Submit sẽ đánh dấu hoàn tất. Bạn muốn Submit không?")) return;
+
+                try {
+                    const res = await fetch(`?handler=Submit`, {
+                        method: 'POST',
+                        body: new FormData(form)
+                    });
+
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.ok) {
+                        alert(data.error || ('Submit failed. HTTP ' + res.status));
+                        return;
+                    }
+
+                    alert("Submitted!");
+                    // location.reload(); // nếu muốn tự reload để thấy status/read-only ngay
+                } catch (e) {
+                    alert('Error: ' + e);
+                }
+            });
+
+            // init
+            renderOverlay();
+            renderList();
+            loadSavedBoxes();
+
+        })();
+    </script>
+}
