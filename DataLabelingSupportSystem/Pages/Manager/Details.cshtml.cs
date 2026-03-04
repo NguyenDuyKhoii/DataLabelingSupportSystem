@@ -52,14 +52,48 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
 
         public async Task<IActionResult> OnPostAddLabelAsync(int id)
         {
+            // 1) Validate basic (ModelState từ DataAnnotations)
             if (!ModelState.IsValid)
             {
                 await OnGetAsync(id);
                 return Page();
             }
 
-            await _labelService.AddLabelAsync(NewLabel, id);
-            return RedirectToPage("Details", new { id = id });
+            // 2) Normalize input để tránh lỗi vặt " aaa " vs "aaa"
+            NewLabel.Name = (NewLabel.Name ?? "").Trim();
+
+            if (string.IsNullOrWhiteSpace(NewLabel.Name))
+            {
+                ModelState.AddModelError(string.Empty, "Label name is required.");
+                await OnGetAsync(id);
+                return Page();
+            }
+
+            // 3) Check duplicate trước (không cần DbContext)
+            var existing = await _labelService.GetLabelsByProjectIdAsync(id);
+            var dup = existing.Any(l => string.Equals(l.Name?.Trim(), NewLabel.Name, StringComparison.OrdinalIgnoreCase));
+            if (dup)
+            {
+                ModelState.AddModelError(string.Empty, $"Label '{NewLabel.Name}' already exists in this project.");
+                await OnGetAsync(id);
+                return Page();
+            }
+
+            // 4) Try/catch để chống race condition (2 tab cùng add)
+            try
+            {
+                await _labelService.AddLabelAsync(NewLabel, id);
+            }
+            catch (Exception ex)
+            {
+                // Nếu bạn muốn bắt chặt DbUpdateException thì phải bubble từ service lên;
+                // ở đây bắt general để không 500, và show message an toàn.
+                ModelState.AddModelError(string.Empty, $"Cannot add label. It may already exist. ({ex.Message})");
+                await OnGetAsync(id);
+                return Page();
+            }
+
+            return RedirectToPage("Details", new { id });
         }
 
         // ✅ THÊM MỚI: Handler UPDATE Label

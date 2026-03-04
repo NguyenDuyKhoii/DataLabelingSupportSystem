@@ -92,6 +92,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                 Status = task.Status,
                 Items = task.TaskItems.Select(ti => new DataItemDto
                 {
+                    TaskItemId = ti.TaskItemId,
                     DataItemId = ti.DataItemId,
                     ImagePath = ti.DataItem.ImagePath
                 }).ToList()
