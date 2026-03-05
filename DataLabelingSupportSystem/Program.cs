@@ -1,4 +1,5 @@
-﻿using DataLabelingSupportSystem.BLL.Interface;
+﻿using DataLabelingSupportSystem;
+using DataLabelingSupportSystem.BLL.Interface;
 using DataLabelingSupportSystem.BLL.Services;
 using DataLabelingSupportSystem.DAL.DbContext;
 using DataLabelingSupportSystem.DAL.Interfaces;
@@ -68,6 +69,9 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+// Seed test data (only runs if DB has no users)
+await SeedTestData.SeedAsync(app.Services);
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

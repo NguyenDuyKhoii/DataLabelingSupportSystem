@@ -66,12 +66,28 @@
                         <h6 class="mb-2">Info</h6>
                         <div class="small">
                             <div><strong>Submission:</strong> #@d.SubmissionId</div>
-                            <div><strong>Submitted by:</strong> @d.SubmittedBy</div>
+                            <div><strong>Submitted by:</strong> @d.SubmittedByName</div>
                             <div><strong>Submitted at (UTC):</strong> @d.SubmittedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</div>
                             <div><strong>Status:</strong> <span class="badge bg-secondary">@d.Status</span></div>
                         </div>
 
                         <hr />
+
+                        @if (d.Boxes.Count > 0)
+                        {
+                            <h6 class="mb-2">Labels</h6>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                @foreach (var grp in d.Boxes.GroupBy(b => b.LabelId).Select(g => g.First()))
+                                {
+                                    var color = d.LabelColors.ContainsKey(grp.LabelId) ? d.LabelColors[grp.LabelId] : "#00bcd4";
+                                    <span class="badge" style="background-color: @color; color: #fff; font-size: 0.8rem;">
+                                        @grp.LabelName
+                                        <span class="ms-1 badge bg-light text-dark">@d.Boxes.Count(b => b.LabelId == grp.LabelId)</span>
+                                    </span>
+                                }
+                            </div>
+                            <hr />
+                        }
 
                         <!-- Anti-forgery token for fetch -->
                         <form method="post" id="antiForgeryForm">
@@ -181,6 +197,15 @@
                     div.style.background = c + '22';
                     div.style.borderRadius = '6px';
                     div.style.boxSizing = 'border-box';
+
+                    // Label name tag
+                    if (b.labelName) {
+                        const tag = document.createElement('span');
+                        tag.textContent = b.labelName;
+                        tag.style.cssText = `position:absolute;top:-18px;left:0;background:${c};color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;white-space:nowrap;pointer-events:none;`;
+                        div.appendChild(tag);
+                    }
+
                     overlay.appendChild(div);
                 });
             }
