@@ -351,6 +351,7 @@ namespace DataLabelingSupportSystem.BLL.Services
         {
             var submission = await _db.DataItemSubmissions
                 .AsNoTracking()
+                .Include(s => s.Submitter)
                 .Include(s => s.TaskItem)
                     .ThenInclude(ti => ti.DataItem)
                 .Include(s => s.Annotations)
@@ -369,6 +370,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                 SubmissionId = submission.DataItemSubmissionId,
                 TaskItemId = submission.TaskItemId,
                 SubmittedBy = submission.SubmittedBy,
+                SubmittedByName = submission.Submitter.Name ?? submission.Submitter.Username,
                 SubmittedAtUtc = submission.SubmittedAt,
                 Status = submission.Status.ToString(),
                 ImagePath = submission.TaskItem.DataItem.ImagePath,
@@ -377,6 +379,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                     .Select(a => new AnnotationBoxDto
                     {
                         LabelId = a.LabelId,
+                        LabelName = a.Label.Name,
                         X = a.X,
                         Y = a.Y,
                         Width = a.Width,
@@ -415,6 +418,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                     SubmissionId = s.DataItemSubmissionId,
                     TaskItemId = s.TaskItemId,
                     SubmittedBy = s.SubmittedBy,
+                    SubmittedByName = s.Submitter.Name ?? s.Submitter.Username,
                     SubmittedAtUtc = s.SubmittedAt,
                     Status = s.Status.ToString()
                 })
