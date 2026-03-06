@@ -3,17 +3,23 @@
     var currentPath = (Context?.Request?.Path.Value ?? "").ToLowerInvariant();
 
     // Menu data (reusable)
-    var items = role == "Admin"
-        ? new[]
+    var items = role switch
+    {
+        "Admin" => new[]
         {
             new { Text = "Dashboard", Icon = "bi-speedometer2", Page = "/Admin/Index" },
             new { Text = "Users",      Icon = "bi-people",       Page = "/Admin/ListOfUser" },
-        }
-        : new[]
+        },
+        "Reviewer" => new[]
+        {
+            new { Text = "Review Queue", Icon = "bi-clipboard-check", Page = "/Reviewer/Index" },
+        },
+        _ => new[]
         {
             new { Text = "Dashboard",     Icon = "bi-grid",        Page = "/Manager/Index" },
             new { Text = "Create Project",Icon = "bi-plus-circle", Page = "/Manager/CreateProject" },
-        };
+        }
+    };
 
     bool IsActive(string page)
     {
