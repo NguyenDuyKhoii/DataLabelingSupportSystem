@@ -429,6 +429,7 @@ namespace DataLabelingSupportSystem.BLL.Services
         {
             var submission = await _db.DataItemSubmissions
                 .AsNoTracking()
+                .Include(s => s.Submitter)
                 .Include(s => s.TaskItem)
                     .ThenInclude(ti => ti.DataItem)
                 .Include(s => s.Annotations)
@@ -447,6 +448,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                 SubmissionId = submission.DataItemSubmissionId,
                 TaskItemId = submission.TaskItemId,
                 SubmittedBy = submission.SubmittedBy,
+                SubmittedByName = submission.Submitter.Name ?? submission.Submitter.Username,
                 SubmittedAtUtc = submission.SubmittedAt,
                 Status = submission.Status.ToString(),
                 ImagePath = submission.TaskItem.DataItem.ImagePath,
@@ -455,6 +457,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                     .Select(a => new AnnotationBoxDto
                     {
                         LabelId = a.LabelId,
+                        LabelName = a.Label.Name,
                         X = a.X,
                         Y = a.Y,
                         Width = a.Width,
@@ -478,13 +481,13 @@ namespace DataLabelingSupportSystem.BLL.Services
 
             var query = _db.DataItemSubmissions
                 .AsNoTracking()
-                .Where(s =>
-                    (s.Status == SubmissionStatus.Submitted || s.Status == SubmissionStatus.InReview) &&
-                    s.SubmittedAt != sentinel);
+                .Where(s => s.SubmittedAt != sentinel);
 
-            // Sort: Submitted trước, rồi InReview; trong mỗi nhóm thì SubmittedAt mới nhất trước
+            // Sort: Submitted → InReview → Approved → Rejected; trong mỗi nhóm thì SubmittedAt mới nhất trước
             query = query
-                .OrderBy(s => s.Status == SubmissionStatus.Submitted ? 0 : 1)
+                .OrderBy(s => s.Status == SubmissionStatus.Submitted ? 0 :
+                              s.Status == SubmissionStatus.InReview ? 1 :
+                              s.Status == SubmissionStatus.Approved ? 2 : 3)
                 .ThenByDescending(s => s.SubmittedAt);
 
             return await query
@@ -493,6 +496,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                     SubmissionId = s.DataItemSubmissionId,
                     TaskItemId = s.TaskItemId,
                     SubmittedBy = s.SubmittedBy,
+                    SubmittedByName = s.Submitter.Name ?? s.Submitter.Username,
                     SubmittedAtUtc = s.SubmittedAt,
                     Status = s.Status.ToString()
                 })

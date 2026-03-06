@@ -1,20 +1,58 @@
-﻿@page
+@page
 @model DataLabelingSupportSystem.UI.Pages.Reviewer.IndexModel
 @{
     ViewData["Title"] = "Review Queue";
+
+    var queue = Model.Queue ?? new List<DataLabelingSupportSystem.BLL.DTO.ReviewQueueItemDto>();
+    int total = queue.Count;
+    int pending = queue.Count(q => q.Status == "Submitted");
+    int inReview = queue.Count(q => q.Status == "InReview");
+    int approved = queue.Count(q => q.Status == "Approved");
+    int rejected = queue.Count(q => q.Status == "Rejected");
 }
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 <div class="container py-4">
 
+    <!-- Header -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-            <h3 class="mb-0">Review Queue</h3>
+            <h3 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Review Queue</h3>
             <small class="text-muted">Review submitted annotations</small>
         </div>
     </div>
 
+    <!-- Stats bar -->
+    <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-light text-center py-2">
+                <div class="fw-bold fs-5">@total</div>
+                <small class="text-muted">Total</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-primary bg-opacity-10 text-center py-2">
+                <div class="fw-bold fs-5 text-primary">@pending</div>
+                <small class="text-muted">Pending</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-warning bg-opacity-10 text-center py-2">
+                <div class="fw-bold fs-5 text-warning">@inReview</div>
+                <small class="text-muted">In Review</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-success bg-opacity-10 text-center py-2">
+                <div class="fw-bold fs-5 text-success">@approved</div>
+                <small class="text-muted">Approved</small>
+            </div>
+        </div>
+    </div>
+
     <div class="card shadow-sm">
-        <div class="card-body">
+        <div class="card-body p-0">
 
             <!-- Anti-forgery token for fetch -->
             <form method="post" id="antiForgeryForm">
@@ -22,8 +60,8 @@
             </form>
 
             <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                    <thead class="table-light">
                         <tr>
                             <th>Submission</th>
                             <th>TaskItem</th>
@@ -34,15 +72,18 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @if (Model.Queue == null || Model.Queue.Count == 0)
+                        @if (total == 0)
                         {
                             <tr>
-                                <td colspan="6" class="text-muted">No submissions in queue.</td>
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No submissions in queue.
+                                </td>
                             </tr>
                         }
                         else
                         {
-                            foreach (var item in Model.Queue)
+                            foreach (var item in queue)
                             {
                                 var badge = item.Status switch
                                 {
@@ -54,37 +95,31 @@
                                 };
 
                                 <tr data-submission-id="@item.SubmissionId" data-status="@item.Status">
-                                    <td>#@item.SubmissionId</td>
+                                    <td class="fw-semibold">#@item.SubmissionId</td>
                                     <td>@item.TaskItemId</td>
-                                    <td>@item.SubmittedBy</td>
+                                    <td>@item.SubmittedByName</td>
                                     <td>@item.SubmittedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                                    <td><span class="badge @badge">@item.Status</span></td>
+                                    <td><span class="badge rounded-pill @badge">@item.Status</span></td>
                                     <td class="text-end">
-                                        <!-- ✅ View detail (always available for non-draft queue items) -->
                                         <a asp-page="/Reviewer/Review"
                                            asp-route-submissionId="@item.SubmissionId"
-                                           class="btn btn-outline-primary btn-sm me-2">
-                                            View
+                                           class="btn btn-outline-primary btn-sm me-1"
+                                           data-bs-toggle="tooltip" title="View">
+                                            <i class="bi bi-eye"></i>
                                         </a>
 
-                                        @if (item.Status == "Submitted")
+                                        @if (item.Status == "InReview")
                                         {
-                                            <button type="button" class="btn btn-outline-secondary btn-sm btn-start-review">
-                                                Start review
+                                            <button type="button"
+                                                    class="btn btn-success btn-sm btn-approve me-1"
+                                                    data-bs-toggle="tooltip" title="Approve">
+                                                <i class="bi bi-check-lg"></i>
                                             </button>
-                                        }
-                                        else if (item.Status == "InReview")
-                                        {
-                                            <button type="button" class="btn btn-success btn-sm btn-approve me-2">
-                                                Approve
+                                            <button type="button"
+                                                    class="btn btn-danger btn-sm btn-reject"
+                                                    data-bs-toggle="tooltip" title="Reject">
+                                                <i class="bi bi-x-lg"></i>
                                             </button>
-                                            <button type="button" class="btn btn-danger btn-sm btn-reject">
-                                                Reject
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
                                         }
                                     </td>
                                 </tr>
@@ -128,7 +163,11 @@
 @section Scripts {
     <script>
         (function () {
-            // Get antiforgery token from hidden input
+            // Init tooltips
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(
+                el => new bootstrap.Tooltip(el)
+            );
+
             const tokenInput = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]');
             const token = tokenInput ? tokenInput.value : null;
 
@@ -147,7 +186,6 @@
                 return data;
             }
 
-            // Bootstrap modal instance
             const modalEl = document.getElementById('decisionModal');
             const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
 
@@ -173,19 +211,6 @@
 
                 const submissionId = row.getAttribute('data-submission-id');
                 const status = row.getAttribute('data-status');
-
-                // Start review
-                if (e.target.closest('.btn-start-review')) {
-                    try {
-                        const fd = new FormData();
-                        fd.append('submissionId', submissionId);
-                        await postHandler('SetInReview', fd);
-                        window.location.reload();
-                    } catch (err) {
-                        alert(err.message || err);
-                    }
-                    return;
-                }
 
                 // Approve opens modal
                 if (e.target.closest('.btn-approve') && status === 'InReview') {
