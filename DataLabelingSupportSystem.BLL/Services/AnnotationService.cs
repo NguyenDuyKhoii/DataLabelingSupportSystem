@@ -403,13 +403,13 @@ namespace DataLabelingSupportSystem.BLL.Services
 
             var query = _db.DataItemSubmissions
                 .AsNoTracking()
-                .Where(s =>
-                    (s.Status == SubmissionStatus.Submitted || s.Status == SubmissionStatus.InReview) &&
-                    s.SubmittedAt != sentinel);
+                .Where(s => s.SubmittedAt != sentinel);
 
-            // Sort: Submitted trước, rồi InReview; trong mỗi nhóm thì SubmittedAt mới nhất trước
+            // Sort: Submitted → InReview → Approved → Rejected; trong mỗi nhóm thì SubmittedAt mới nhất trước
             query = query
-                .OrderBy(s => s.Status == SubmissionStatus.Submitted ? 0 : 1)
+                .OrderBy(s => s.Status == SubmissionStatus.Submitted ? 0 :
+                              s.Status == SubmissionStatus.InReview ? 1 :
+                              s.Status == SubmissionStatus.Approved ? 2 : 3)
                 .ThenByDescending(s => s.SubmittedAt);
 
             return await query
