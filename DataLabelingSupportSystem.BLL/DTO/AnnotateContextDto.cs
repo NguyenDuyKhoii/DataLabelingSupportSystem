@@ -12,5 +12,6 @@ namespace DataLabelingSupportSystem.BLL.DTO
         public bool CanEdit { get; set; }
 
         public List<LabelViewDto> Labels { get; set; } = new();
+        public string? ReviewComment { get; set; }
     }
 }
