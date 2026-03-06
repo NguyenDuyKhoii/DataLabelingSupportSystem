@@ -19,6 +19,21 @@
         </div>
     </div>
 
+    @if (Model.Vm?.SubmissionStatus == "Rejected")
+    {
+        <div class="alert alert-danger d-flex align-items-start gap-2 mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 mt-1"></i>
+            <div>
+                <strong>Submission bị Reject!</strong>
+                @if (!string.IsNullOrWhiteSpace(Model.Vm.ReviewComment))
+                {
+                    <div class="mt-1">Lý do: <em>@Model.Vm.ReviewComment</em></div>
+                }
+                <div class="mt-1 text-muted small">Vui lòng chỉnh sửa annotations và Submit lại.</div>
+            </div>
+        </div>
+    }
+
     <div class="row g-3">
         <!-- LEFT: image + draw overlay -->
         <div class="col-12 col-lg-8">

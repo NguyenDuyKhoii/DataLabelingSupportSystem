@@ -59,6 +59,12 @@ namespace DataLabelingSupportSystem.BLL.Services
                 return draft;
             }
 
+            // Rework: nếu submission mới nhất bị Rejected → tạo draft mới + copy annotations
+            var latestRejected = await SubmissionsOf(taskItemId, userId)
+                .Where(s => s.Status == SubmissionStatus.Rejected)
+                .OrderByDescending(s => s.DataItemSubmissionId)
+                .FirstOrDefaultAsync();
+
             var created = new DataItemSubmission
             {
                 TaskItemId = taskItemId,
@@ -69,6 +75,30 @@ namespace DataLabelingSupportSystem.BLL.Services
 
             _db.DataItemSubmissions.Add(created);
             await _db.SaveChangesAsync();
+
+            // Copy annotations từ submission bị reject để Annotator có điểm bắt đầu sửa
+            if (latestRejected != null)
+            {
+                var oldAnnotations = await _db.Annotations
+                    .Where(a => a.DataItemSubmissionId == latestRejected.DataItemSubmissionId)
+                    .ToListAsync();
+
+                if (oldAnnotations.Count > 0)
+                {
+                    var copied = oldAnnotations.Select(a => new Annotation
+                    {
+                        DataItemSubmissionId = created.DataItemSubmissionId,
+                        LabelId = a.LabelId,
+                        X = a.X,
+                        Y = a.Y,
+                        Width = a.Width,
+                        Height = a.Height
+                    });
+
+                    _db.Annotations.AddRange(copied);
+                    await _db.SaveChangesAsync();
+                }
+            }
 
             await tx.CommitAsync();
             return created;
@@ -112,9 +142,19 @@ namespace DataLabelingSupportSystem.BLL.Services
             else
             {
                 // Khi đã vào review/final thì khóa edit để tránh sửa ngược luồng
+                // Rejected → cho phép rework (canEdit = true)
                 canEdit = display.Status != SubmissionStatus.InReview
-                          && display.Status != SubmissionStatus.Approved
-                          && display.Status != SubmissionStatus.Rejected;
+                          && display.Status != SubmissionStatus.Approved;
+            }
+
+            // Load review comment nếu submission mới nhất bị Rejected (hiển thị lý do cho Annotator)
+            string? reviewComment = null;
+            if (display != null && display.Status == SubmissionStatus.Rejected)
+            {
+                var review = await _db.DataItemReviews
+                    .Where(r => r.DataItemSubmissionId == display.DataItemSubmissionId)
+                    .FirstOrDefaultAsync();
+                reviewComment = review?.Comment;
             }
 
             return new AnnotateContextDto
@@ -129,7 +169,8 @@ namespace DataLabelingSupportSystem.BLL.Services
                 SubmissionStatus = display?.Status.ToString(),
                 SubmittedAt = display?.SubmittedAt,
                 CanEdit = canEdit,
-                Labels = labels
+                Labels = labels,
+                ReviewComment = reviewComment
             };
         }
 
@@ -180,10 +221,9 @@ namespace DataLabelingSupportSystem.BLL.Services
             // IMPORTANT: luôn dùng draft (sentinel) để Save không bị chặn bởi submission thật cũ.
             var submission = await GetOrCreateDraftAsync(taskItemId, annotatorId);
 
-            // Khóa edit khi đã vào review/final (future-proof)
+            // Khóa edit khi đã vào review/final (Rejected cho phép rework qua draft mới)
             if (submission.Status == SubmissionStatus.InReview
-                || submission.Status == SubmissionStatus.Approved
-                || submission.Status == SubmissionStatus.Rejected)
+                || submission.Status == SubmissionStatus.Approved)
             {
                 throw new InvalidOperationException("This submission can no longer be edited.");
             }
@@ -346,6 +386,44 @@ namespace DataLabelingSupportSystem.BLL.Services
             _db.DataItemReviews.Add(review);
 
             await _db.SaveChangesAsync();
+
+            // Completion Rule: nếu Approved thì check xem Task đã hoàn thành chưa
+            if (decision == ReviewDecision.Approved)
+            {
+                await TryCompleteTaskAsync(submission.TaskItemId);
+            }
+        }
+
+        /// <summary>
+        /// Kiểm tra nếu tất cả TaskItem trong cùng Task đều có submission mới nhất Approved
+        /// thì tự động set TaskEntity.Status = Completed.
+        /// </summary>
+        private async Task TryCompleteTaskAsync(int taskItemId)
+        {
+            var taskItem = await _db.TaskItems
+                .Include(ti => ti.Task)
+                    .ThenInclude(t => t.TaskItems)
+                        .ThenInclude(ti => ti.Submissions)
+                .FirstOrDefaultAsync(ti => ti.TaskItemId == taskItemId);
+
+            if (taskItem == null) return;
+
+            var task = taskItem.Task;
+
+            var allApproved = task.TaskItems.All(ti =>
+            {
+                var latestReal = ti.Submissions
+                    .Where(s => !IsSentinel(s.SubmittedAt))
+                    .OrderByDescending(s => s.DataItemSubmissionId)
+                    .FirstOrDefault();
+                return latestReal?.Status == SubmissionStatus.Approved;
+            });
+
+            if (allApproved && task.Status != Enums.TaskStatus.Completed)
+            {
+                task.Status = Enums.TaskStatus.Completed;
+                await _db.SaveChangesAsync();
+            }
         }
         public async Task<ReviewSubmissionDetailDto> GetReviewSubmissionDetailAsync(int dataItemSubmissionId, int reviewerId)
         {
