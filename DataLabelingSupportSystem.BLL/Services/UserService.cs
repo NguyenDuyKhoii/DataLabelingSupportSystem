@@ -22,23 +22,40 @@ namespace DataLabelingSupportSystem.BLL.Services
             // 1. Lấy dữ liệu thô từ Repo
             var users = await _userRepository.GetAllUsersAsync();
 
-            // 2. Map đầy đủ dữ liệu sang DTO
-            var userDtos = users.Select(u => new UserDto
+            IEnumerable<User> query = users;
+
+            // 2. Apply filters
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(u => 
+                    u.Username.ToLower().Contains(s) || 
+                    (u.Name != null && u.Name.ToLower().Contains(s)) ||
+                    (u.Email != null && u.Email.ToLower().Contains(s))
+                );
+            }
+
+            if (roleId.HasValue)
+            {
+                query = query.Where(u => u.RoleId == roleId.Value);
+            }
+
+            if (isActive.HasValue)
+            {
+                query = query.Where(u => u.IsActive == isActive.Value);
+            }
+
+            // 3. Map đầy đủ dữ liệu sang DTO
+            var userDtos = query.Select(u => new UserDto
             {
                 UserId = u.UserId,
                 Username = u.Username,
-                Name = u.Name ?? "Not updated", // Handle null gracefully
+                Name = u.Name ?? "Not updated", 
                 Email = u.Email ?? "",
                 Phone = u.Phone ?? "",
-
                 RoleId = u.RoleId,
-                // Note: Ensure Repo has Include(u => u.Role) 
-                // otherwise u.Role will be null -> causing error.
                 RoleName = u.Role != null ? u.Role.RoleName : "Unknown",
-
-                // IMPORTANT: Must map IsActive
                 IsActive = u.IsActive,
-
                 CreatedAt = u.CreatedAt
             }).ToList();
 

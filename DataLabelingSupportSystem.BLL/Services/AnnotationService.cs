@@ -60,10 +60,16 @@ namespace DataLabelingSupportSystem.BLL.Services
             }
 
             // Rework: nếu submission mới nhất bị Rejected → tạo draft mới + copy annotations
-            var latestRejected = await SubmissionsOf(taskItemId, userId)
-                .Where(s => s.Status == SubmissionStatus.Rejected)
+            var submissions = await SubmissionsOf(taskItemId, userId)
                 .OrderByDescending(s => s.DataItemSubmissionId)
-                .FirstOrDefaultAsync();
+                .ToListAsync();
+
+            if (submissions.Any(s => s.Status == SubmissionStatus.Approved))
+            {
+                throw new InvalidOperationException("This item has been approved and cannot be edited.");
+            }
+
+            var latestRejected = submissions.FirstOrDefault(s => s.Status == SubmissionStatus.Rejected);
 
             var created = new DataItemSubmission
             {
