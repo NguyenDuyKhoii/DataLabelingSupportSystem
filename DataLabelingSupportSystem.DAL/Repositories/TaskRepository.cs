@@ -52,6 +52,7 @@ namespace DataLabelingSupportSystem.DAL.Repositories
                 .Include(t => t.Project)
                 .Include(t => t.Annotator)
                 .Include(t => t.TaskItems)
+                .ThenInclude(ti => ti.Submissions)
                 .Where(t => t.ProjectId == projectId)
                 .ToListAsync();
         }
