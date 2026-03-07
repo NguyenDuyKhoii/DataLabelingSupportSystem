@@ -31,6 +31,9 @@ namespace DataLabelingSupportSystem.DAL.Repositories
                 .Include(t => t.Annotator)
                 .Include(t => t.TaskItems)
                     .ThenInclude(ti => ti.DataItem)
+                .Include(t => t.TaskItems)
+                    .ThenInclude(ti => ti.Submissions)
+                        .ThenInclude(s => s.Review)
                 .FirstOrDefaultAsync(t => t.TaskId == taskId);
         }
 

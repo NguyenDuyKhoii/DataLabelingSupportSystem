@@ -4,20 +4,29 @@
     ViewData["Title"] = "Annotate";
 }
 
-<div class="container py-4">
-
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <div>
-            <h3 class="mb-0">Annotation</h3>
-            <small class="text-muted">Draw bounding boxes and assign labels</small>
-        </div>
-
-        <div class="d-flex gap-2">
-            <a asp-page="/Annotator/Index" class="btn btn-outline-secondary btn-sm">
-                &larr; Back
-            </a>
-        </div>
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+        <h3 class="mb-0"><i class="bi bi-bounding-box-circles me-2"></i>Annotation</h3>
+        <small class="text-muted">Draw bounding boxes and assign labels</small>
     </div>
+
+    <div class="d-flex gap-2">
+        <a asp-page="/Annotator/TaskDetails" asp-route-id="@Model.Vm.Item.TaskItemId" class="btn btn-outline-secondary btn-sm shadow-sm">
+            <i class="bi bi-arrow-left"></i> Back to Task
+        </a>
+    </div>
+</div>
+
+    @if (Model.Vm?.SubmissionStatus == "Approved")
+    {
+        <div class="alert alert-success d-flex align-items-start gap-2 mb-3" role="alert">
+            <i class="bi bi-check-circle-fill fs-5 mt-1"></i>
+            <div>
+                <strong>Bức ảnh này đã được Approve!</strong>
+                <div class="mt-1">Nghiệm thu hoàn tất, bạn không thể chỉnh sửa thêm.</div>
+            </div>
+        </div>
+    }
 
     @if (Model.Vm?.SubmissionStatus == "Rejected")
     {
