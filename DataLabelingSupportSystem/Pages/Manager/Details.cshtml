@@ -5,7 +5,6 @@
     ViewData["Title"] = "Project Details: " + Model.Project.Name;
 }
 
-<!-- Header (dash-card like /Manager, no stat cards) -->
 <div class="dash-card mb-3">
     <div class="dash-card-h d-flex justify-content-between align-items-center">
         <div>
@@ -24,7 +23,6 @@
     </div>
 </div>
 
-<!-- Status / meta (still dash-card, simple, no stat-card blocks) -->
 <div class="dash-card mb-3">
     <div class="dash-card-b d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div class="d-flex align-items-center gap-2">
@@ -54,7 +52,6 @@
     </div>
 </div>
 
-<!-- Tabs container (dash-card like Index) -->
 <div class="dash-card">
     <div class="dash-card-h d-flex justify-content-between align-items-center">
         <div class="fw-semibold">Manage</div>
@@ -78,11 +75,9 @@
     <div class="dash-card-b">
         <div class="tab-content" id="myTabContent">
 
-            <!-- ================= LABELS TAB ================= -->
             <div class="tab-pane fade show active" id="labels" role="tabpanel" aria-labelledby="labels-tab">
                 <div class="row g-3">
                     <div asp-validation-summary="All" class="text-danger mb-2"></div>
-                    <!-- Add label -->
                     <div class="col-12 col-lg-4">
                         <div class="p-3" style="background:#fff;border:1px solid var(--dash-border);border-radius:18px;">
                             <div class="fw-semibold mb-3">Add new label</div>
@@ -111,7 +106,6 @@
                         </div>
                     </div>
 
-                    <!-- Labels list -->
                     <div class="col-12 col-lg-8">
                         <div style="background:#fff;border:1px solid var(--dash-border);border-radius:18px;overflow:hidden;">
                             <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2"
@@ -178,10 +172,8 @@
                 </div>
             </div>
 
-            <!-- ================= IMAGES TAB ================= -->
             <div class="tab-pane fade" id="images" role="tabpanel" aria-labelledby="images-tab">
 
-                <!-- Upload -->
                 <div class="p-3 mb-3" style="background:#fff;border:1px solid var(--dash-border);border-radius:18px;">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div class="fw-semibold">
@@ -204,7 +196,6 @@
                     </form>
                 </div>
 
-                <!-- Grid -->
                 <div class="p-3" style="background:#fff;border:1px solid var(--dash-border);border-radius:18px;">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="fw-semibold">
@@ -247,7 +238,6 @@
             </div>
             <hr class="my-5" />
 
-            <!-- TASKS SECTION -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5>📋 Tasks in this project (@Model.Tasks.Count)</h5>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
@@ -264,7 +254,7 @@
                                     <th># Task ID</th>
                                     <th>Annotator</th>
                                     <th>Assigned Images</th>
-                                    <th>Status</th>
+                                    <th>Progress</th> <th>Status</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -280,6 +270,35 @@
                                             </td>
                                             <td>
                                                 <span class="badge bg-info text-dark">@task.ImageCount Images</span>
+                                            </td>
+                                            
+                                            <td style="width: 250px;">
+                                                @{
+                                                    int total = task.ImageCount;
+                                                    int approved = task.ApprovedCount;
+                                                    int rejected = task.RejectedCount;
+                                                    
+                                                    // Pending: Đã làm (Submitted) nhưng chưa duyệt
+                                                    int pending = task.SubmittedCount - approved - rejected; 
+                                                    if(pending < 0) pending = 0; 
+
+                                                    int approvedPct = total > 0 ? (int)Math.Round((double)approved / total * 100) : 0;
+                                                    int rejectedPct = total > 0 ? (int)Math.Round((double)rejected / total * 100) : 0;
+                                                    int pendingPct = total > 0 ? (int)Math.Round((double)pending / total * 100) : 0;
+                                                    
+                                                    int totalProgressPct = approvedPct + rejectedPct + pendingPct;
+                                                }
+                                                
+                                                <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 12px;">
+                                                    <span class="text-muted">@task.SubmittedCount / @total Done</span>
+                                                    <span class="fw-bold text-dark">@(totalProgressPct)%</span>
+                                                </div>
+                                                
+                                                <div class="progress shadow-sm" style="height: 10px; border-radius: 5px;">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: @(approvedPct)%" title="Approved: @approved"></div>
+                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: @(pendingPct)%" title="Pending Review: @pending"></div>
+                                                    <div class="progress-bar bg-danger" role="progressbar" style="width: @(rejectedPct)%" title="Rejected: @rejected"></div>
+                                                </div>
                                             </td>
                                             <td>
                                                 @{
@@ -302,7 +321,7 @@
                                 else
                                 {
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">
+                                        <td colspan="6" class="text-center text-muted py-4"> 
                                             No tasks found. Click "Create New Task" to begin.
                                         </td>
                                     </tr>
@@ -316,7 +335,6 @@
     </div>
 </div>
 
-<!-- Create Task Modal -->
 <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -387,7 +405,6 @@
     </div>
 </div>
 
-<!-- Edit Label Modal -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">

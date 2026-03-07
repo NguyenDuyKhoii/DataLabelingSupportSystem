@@ -107,9 +107,9 @@ public static class SeedTestData
             {
                 ProjectId = project.ProjectId,
                 AnnotatorId = annotator2.UserId,
-                Status = Enums.TaskStatus.InProgress
-            };
-            db.Set<TaskEntity>().Add(task2);
+                    Status = Enums.TaskStatus.InProgress
+                };
+                db.Set<TaskEntity>().Add(task2);
             await db.SaveChangesAsync();
         }
 

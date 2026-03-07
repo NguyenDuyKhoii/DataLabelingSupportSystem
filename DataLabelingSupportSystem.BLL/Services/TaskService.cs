@@ -1,22 +1,28 @@
+﻿using DataLabelingSupportSystem.BLL.DTO;
+using DataLabelingSupportSystem.BLL.Interface;
+using DataLabelingSupportSystem.DAL.DbContext;
+using DataLabelingSupportSystem.DAL.Interfaces;
+using DataLabelingSupportSystem.DAL.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using DataLabelingSupportSystem.BLL.DTO;
-using DataLabelingSupportSystem.BLL.Interface;
-using DataLabelingSupportSystem.DAL.Interfaces;
-using DataLabelingSupportSystem.DAL.Models;
+using static DataLabelingSupportSystem.DAL.Models.Enums;
 
 namespace DataLabelingSupportSystem.BLL.Services
 {
     public class TaskService : ITaskService
     {
         private readonly ITaskRepository _taskRepository;
+        private readonly AppDbContext _context;
 
-        public TaskService(ITaskRepository taskRepository)
+        public TaskService(ITaskRepository taskRepository, AppDbContext context)
         {
             _taskRepository = taskRepository;
+            _context = context;
         }
+        
 
         public async Task<TaskViewDto> CreateTaskAsync(CreateTaskDto dto)
         {
@@ -60,7 +66,15 @@ namespace DataLabelingSupportSystem.BLL.Services
                 AnnotatorId = t.AnnotatorId,
                 AnnotatorName = t.Annotator.Name,
                 Status = t.Status,
-                ImageCount = t.TaskItems.Count
+                ImageCount = t.TaskItems.Count,
+
+
+
+                SubmittedCount = t.TaskItems.Count(ti => ti.Submissions.Any()),
+
+                
+                ApprovedCount = t.TaskItems.Count(ti => ti.Submissions.Any(s => s.Status == Enums.SubmissionStatus.Approved)),
+                RejectedCount = t.TaskItems.Count(ti => ti.Submissions.Any(s => s.Status == Enums.SubmissionStatus.Rejected))
             }).ToList();
         }
 
@@ -108,6 +122,33 @@ namespace DataLabelingSupportSystem.BLL.Services
                     };
                 }).ToList()
             };
+        }
+
+
+        public async Task<List<TaskProgressDTO>> GetTaskProgressesByProjectAsync(int projectId)
+        {
+            return await _context.Tasks
+                .AsNoTracking()
+                .Where(t => t.ProjectId == projectId)
+                .Select(t => new TaskProgressDTO
+                {
+                    TaskId = t.TaskId,
+                    AnnotatorName = t.Annotator.Username,
+                    TotalItems = t.TaskItems.Count,
+
+                   
+                    SubmittedCount = t.TaskItems.Count(ti => ti.Submissions.Any()),
+
+                    // Approved: Lần nộp gần nhất có status là Approved
+                    ApprovedCount = t.TaskItems.Count(ti =>
+                        ti.Submissions.OrderByDescending(s => s.SubmittedAt)
+                                      .FirstOrDefault().Status == SubmissionStatus.Approved),
+
+                    // Rejected: Lần nộp gần nhất có status là Rejected
+                    RejectedCount = t.TaskItems.Count(ti =>
+                        ti.Submissions.OrderByDescending(s => s.SubmittedAt)
+                                      .FirstOrDefault().Status == SubmissionStatus.Rejected)
+                }).ToListAsync();
         }
     }
 }

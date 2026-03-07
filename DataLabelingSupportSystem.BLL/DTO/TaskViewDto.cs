@@ -11,5 +11,10 @@ namespace DataLabelingSupportSystem.BLL.DTO
         public string AnnotatorName { get; set; } = null!;
         public DataLabelingSupportSystem.DAL.Models.Enums.TaskStatus Status { get; set; }
         public int ImageCount { get; set; }
+
+
+        public int SubmittedCount { get; set; }
+        public int ApprovedCount { get; set; }
+        public int RejectedCount { get; set; }
     }
 }
