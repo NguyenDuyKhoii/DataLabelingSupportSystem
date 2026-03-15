@@ -4,6 +4,7 @@ using DataLabelingSupportSystem.DAL.DbContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataLabelingSupportSystem.DAL.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260315173053_AddDatasetSnapshots")]
+    partial class AddDatasetSnapshots
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,6 +156,40 @@ namespace DataLabelingSupportSystem.DAL.Migrations
                     b.HasIndex("TaskItemId");
 
                     b.ToTable("data_item_submissions", (string)null);
+                });
+
+            modelBuilder.Entity("DataLabelingSupportSystem.DAL.Models.DatasetSnapshot", b =>
+                {
+                    b.Property<int>("SnapshotId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SnapshotId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SnapshotData")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VersionName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("SnapshotId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("dataset_snapshots", (string)null);
                 });
 
             modelBuilder.Entity("DataLabelingSupportSystem.DAL.Models.Label", b =>
@@ -422,6 +459,17 @@ namespace DataLabelingSupportSystem.DAL.Migrations
                     b.Navigation("TaskItem");
                 });
 
+            modelBuilder.Entity("DataLabelingSupportSystem.DAL.Models.DatasetSnapshot", b =>
+                {
+                    b.HasOne("DataLabelingSupportSystem.DAL.Models.Project", "Project")
+                        .WithMany("DatasetSnapshots")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("DataLabelingSupportSystem.DAL.Models.Label", b =>
                 {
                     b.HasOne("DataLabelingSupportSystem.DAL.Models.Project", "Project")
@@ -513,6 +561,8 @@ namespace DataLabelingSupportSystem.DAL.Migrations
             modelBuilder.Entity("DataLabelingSupportSystem.DAL.Models.Project", b =>
                 {
                     b.Navigation("DataItems");
+
+                    b.Navigation("DatasetSnapshots");
 
                     b.Navigation("Labels");
 

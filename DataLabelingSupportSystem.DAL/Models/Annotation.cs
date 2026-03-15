@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,5 +20,8 @@ namespace DataLabelingSupportSystem.DAL.Models
         public float Y { get; set; }
         public float Width { get; set; }
         public float Height { get; set; }
+
+        public bool IsOccluded { get; set; } = false;
+        public bool IsTruncated { get; set; } = false;
     }
 }

@@ -1,4 +1,4 @@
-﻿@page "{submissionId:int}"
+@page "{submissionId:int}"
 @model DataLabelingSupportSystem.UI.Pages.Reviewer.ReviewModel
 @using System.Text.Json
 @{
@@ -21,7 +21,9 @@
         </div>
 
         <div class="d-flex gap-2">
-            <a asp-page="/Reviewer/Index" class="btn btn-outline-secondary btn-sm">Back</a>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm shadow-sm">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
         </div>
     </div>
 
@@ -95,24 +97,33 @@
                         </form>
 
                         <div class="d-grid gap-2">
-                            @if (d.Status == "Submitted")
+                            @if (User.IsInRole("Reviewer"))
                             {
-                                <button type="button" class="btn btn-outline-warning btn-sm" id="btnStartReview">
-                                    Start review
-                                </button>
-                            }
-                            else if (d.Status == "InReview")
-                            {
-                                <button type="button" class="btn btn-success btn-sm" id="btnApprove">
-                                    Approve
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm" id="btnReject">
-                                    Reject
-                                </button>
+                                @if (d.Status == "Submitted")
+                                {
+                                    <button type="button" class="btn btn-outline-warning btn-sm" id="btnStartReview">
+                                        Start review
+                                    </button>
+                                }
+                                else if (d.Status == "InReview")
+                                {
+                                    <button type="button" class="btn btn-success btn-sm" id="btnApprove">
+                                        Approve
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm" id="btnReject">
+                                        Reject
+                                    </button>
+                                }
+                                else
+                                {
+                                    <div class="text-muted small border p-2 rounded text-center">This submission is read-only.</div>
+                                }
                             }
                             else
                             {
-                                <div class="text-muted small">This submission is read-only.</div>
+                                <div class="alert alert-info py-2 mb-0" style="font-size: 13px;">
+                                    <i class="bi bi-info-circle me-1"></i> You are viewing this result as a Manager.
+                                </div>
                             }
                         </div>
 
@@ -321,10 +332,22 @@
                     fd.append('submissionId', submissionId);
                     fd.append('comment', comment);
 
-                    if (action === 'Approve') await postHandler('Approve', fd);
-                    if (action === 'Reject') await postHandler('Reject', fd);
-
-                    window.location.reload();
+                    if (action === 'Approve') {
+                        const data = await postHandler('Approve', fd);
+                        if (data.nextSubmissionId) {
+                            window.location.href = `/Reviewer/Review/${data.nextSubmissionId}`;
+                        } else {
+                            window.location.reload();
+                        }
+                    }
+                    if (action === 'Reject') {
+                        const data = await postHandler('Reject', fd);
+                        if (data.nextSubmissionId) {
+                            window.location.href = `/Reviewer/Review/${data.nextSubmissionId}`;
+                        } else {
+                            window.location.reload();
+                        }
+                    }
                 } catch (err) {
                     showModalError(err.message || err);
                 }

@@ -1,0 +1,93 @@
+@page "{id:int}"
+@model DataLabelingSupportSystem.UI.Pages.Manager.TaskDetailsModel
+@{
+    ViewData["Title"] = "Task Details #" + Model.TaskDetail.TaskId;
+}
+
+<div class="dash-card mb-4">
+    <div class="dash-card-h d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-1">Task Details #@Model.TaskDetail.TaskId</h4>
+            <div class="text-muted">
+                <i class="bi bi-person-badge me-1"></i> Annotator: <strong>@Model.TaskDetail.AnnotatorName</strong>
+                <span class="mx-2">|</span>
+                <i class="bi bi-folder2 me-1"></i> Project: <strong>@Model.TaskDetail.ProjectName</strong>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            @{
+                string badgeClass = Model.TaskDetail.Status.ToString() switch
+                {
+                    "Assigned" => "bg-secondary",
+                    "InProgress" => "bg-primary",
+                    "Completed" => "bg-success",
+                    _ => "bg-light text-dark"
+                };
+            }
+            <span class="badge @badgeClass fs-6 d-flex align-items-center px-3">@Model.TaskDetail.Status</span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    @foreach (var item in Model.TaskDetail.Items)
+    {
+        <div class="col-md-4 col-xl-3 mb-4">
+            <div class="dash-card h-100 border-0 shadow-sm overflow-hidden">
+                <div class="position-relative">
+                    <img src="@item.ImagePath" class="card-img-top" style="height: 180px; object-fit: cover;" alt="Data Item">
+                    <div class="position-absolute top-0 end-0 m-2">
+                        @if (item.LatestStatus != null)
+                        {
+                            string subBadgeClass = item.LatestStatus.ToString() switch
+                            {
+                                "Approved" => "bg-success",
+                                "Rejected" => "bg-danger",
+                                "InReview" => "bg-info text-dark",
+                                "Submitted" => "bg-warning text-dark",
+                                _ => "bg-secondary"
+                            };
+                            <span class="badge @subBadgeClass">@item.LatestStatus</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-light text-dark border">Not started</span>
+                        }
+                    </div>
+                </div>
+                <div class="dash-card-b p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <small class="text-muted d-block">Item ID</small>
+                            <span class="fw-bold">#@item.DataItemId</span>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(item.ReviewComment))
+                    {
+                        <div class="mb-3 p-2 bg-light rounded" style="font-size: 13px;">
+                            <div class="text-danger fw-bold mb-1"><i class="bi bi-chat-left-text me-1"></i> Reviewer Comment:</div>
+                            <div class="text-muted">@item.ReviewComment</div>
+                        </div>
+                    }
+
+                    @if (item.LatestStatus?.ToString() == "Submitted" || item.LatestStatus?.ToString() == "InReview" || item.LatestStatus?.ToString() == "Approved" || item.LatestStatus?.ToString() == "Rejected")
+                    {
+                        <a asp-page="/Reviewer/Review" asp-route-submissionId="@item.LatestSubmissionId" class="btn btn-sm btn-primary w-100">
+                            <i class="bi bi-eye"></i> View Annotations
+                        </a>
+                    }
+                    else
+                    {
+                        <button class="btn btn-sm btn-outline-secondary w-100" disabled>
+                            <i class="bi bi-clock"></i> No Submission
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

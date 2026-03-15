@@ -103,13 +103,13 @@ namespace DataLabelingSupportSystem.BLL.Services
             {
                 TaskId = task.TaskId,
                 ProjectName = task.Project.Name,
+                AnnotatorName = task.Annotator.Name ?? task.Annotator.Username,
                 Status = task.Status,
                 Items = task.TaskItems.Select(ti =>
                 {
-                    // Find latest submission (excluding those with sentinel date if we only want "real" submissions)
-                    // But for Annotator UI, they want to see if it's "Rejected" or "Approved" based on latest submission.
                     var latestSub = ti.Submissions
-                                    .OrderByDescending(s => s.SubmittedAt)
+                                    .Where(s => s.SubmittedAt.Year != 1900) // Exclude drafts if needed, or include them? Manager usually wants real submissions.
+                                    .OrderByDescending(s => s.DataItemSubmissionId)
                                     .FirstOrDefault();
 
                     return new DataItemDto
@@ -118,6 +118,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                         DataItemId = ti.DataItemId,
                         ImagePath = ti.DataItem.ImagePath,
                         LatestStatus = latestSub?.Status,
+                        LatestSubmissionId = latestSub?.DataItemSubmissionId,
                         ReviewComment = latestSub?.Review?.Comment
                     };
                 }).ToList()

@@ -4,67 +4,263 @@
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<div class="row g-3 mb-3">
-    <div class="col-12 col-md-6 col-xl-3">
-        <div class="stat-card">
-            <div class="stat-title">Users</div>
-            <div class="stat-value">—</div>
-            <div class="stat-meta">View & manage</div>
+<div class="container-fluid py-4">
+    <!-- Header Summary -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">System Overview</h2>
+            <p class="text-muted mb-0">Monitor platform usage and system health.</p>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-success-soft text-success px-3 py-2">
+                <i class="bi bi-shield-check me-1"></i> System Secure
+            </span>
         </div>
     </div>
-    <div class="col-12 col-md-6 col-xl-3">
-        <div class="stat-card">
-            <div class="stat-title">Projects</div>
-            <div class="stat-value">—</div>
-            <div class="stat-meta">Across system</div>
+
+    <!-- Stat Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="bg-primary-soft p-3 rounded-circle">
+                            <i class="bi bi-people text-primary fs-4"></i>
+                        </div>
+                        <span class="badge bg-primary-soft text-primary">+@Model.Stats.TotalUsers new</span>
+                    </div>
+                    <h3 class="fw-bold mb-1">@Model.Stats.TotalUsers</h3>
+                    <p class="text-muted mb-0 small uppercase fw-semibold">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="bg-success-soft p-3 rounded-circle">
+                            <i class="bi bi-folder text-success fs-4"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-1">@Model.Stats.TotalProjects</h3>
+                    <p class="text-muted mb-0 small uppercase fw-semibold">Total Projects</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="bg-info-soft p-3 rounded-circle">
+                            <i class="bi bi-images text-info fs-4"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-1">@Model.Stats.TotalDataItems</h3>
+                    <p class="text-muted mb-0 small uppercase fw-semibold">Total Assets</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="bg-warning-soft p-3 rounded-circle">
+                            <i class="bi bi-pencil-square text-warning fs-4"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-1">@Model.Stats.TotalAnnotations</h3>
+                    <p class="text-muted mb-0 small uppercase fw-semibold">Total Labels</p>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-12 col-md-6 col-xl-3">
-        <div class="stat-card">
-            <div class="stat-title">Data Items</div>
-            <div class="stat-value">—</div>
-            <div class="stat-meta">Storage overview</div>
+
+    <div class="row g-4 mb-4">
+        <!-- User Distribution Chart -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                    <h5 class="fw-bold">User Distribution</h5>
+                    <p class="text-muted small">Total breakdown by system roles</p>
+                </div>
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div style="height: 250px; width: 100%;">
+                        <canvas id="userDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Status Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                    <h5 class="fw-bold">Project Progress</h5>
+                    <p class="text-muted small">Status overview of all projects</p>
+                </div>
+                <div class="card-body p-4">
+                    <div style="height: 250px; width: 100%;">
+                        <canvas id="projectStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-12 col-md-6 col-xl-3">
-        <div class="stat-card">
-            <div class="stat-title">System</div>
-            <div class="stat-value">OK</div>
-            <div class="stat-meta">No alerts</div>
+
+    <div class="row g-4">
+        <!-- Recent Activities -->
+        <div class="col-xl-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold">Recent Activities</h5>
+                    <button class="btn btn-link btn-sm text-decoration-none">View All</button>
+                </div>
+                <div class="card-body p-4">
+                    <div class="timeline">
+                        @foreach (var activity in Model.Stats.RecentActivities)
+                        {
+                            <div class="timeline-item d-flex gap-3 mb-4 last-child-no-border">
+                                <div class="timeline-icon-wrap">
+                                    <div class="bg-@activity.Color-soft p-2 rounded-3 text-@activity.Color">
+                                        <i class="bi @activity.Icon"></i>
+                                    </div>
+                                    <div class="timeline-line"></div>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="fw-bold mb-1">@activity.Message</h6>
+                                        <small class="text-muted">@activity.Timestamp.ToString("HH:mm")</small>
+                                    </div>
+                                    <p class="text-muted small mb-0">System Event</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Shortcuts -->
+        <div class="col-xl-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                    <h5 class="fw-bold">Administrative Tasks</h5>
+                    <p class="text-muted small">Quick access to management tools</p>
+                </div>
+                <div class="card-body p-4">
+                    <div class="list-group list-group-flush">
+                        <a asp-page="/Admin/ListOfUser" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3 border-0 rounded-3 mb-2 bg-light-hover">
+                            <div class="bg-primary-soft p-2 rounded-circle text-primary">
+                                <i class="bi bi-person-gear fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">User Management</h6>
+                                <small class="text-muted">Roles, permissions & account status</small>
+                            </div>
+                            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                        </a>
+                        <a href="/Manager" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3 border-0 rounded-3 mb-2 bg-light-hover">
+                            <div class="bg-success-soft p-2 rounded-circle text-success">
+                                <i class="bi bi-briefcase fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Project Central</h6>
+                                <small class="text-muted">Review all active system projects</small>
+                            </div>
+                            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                        </a>
+                        <div class="list-group-item d-flex align-items-center gap-3 py-3 border-0 rounded-3 mb-2 bg-light-soft opacity-75">
+                            <div class="bg-secondary-soft p-2 rounded-circle text-secondary">
+                                <i class="bi bi-hdd-network fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold text-muted">System Logs (Pro)</h6>
+                                <small class="text-muted">Audit logs & security events</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-12 col-xl-8">
-        <div class="dash-card">
-            <div class="dash-card-h d-flex align-items-center justify-content-between">
-                <div class="fw-semibold">Welcome, @User.Identity?.Name</div>
-                <a asp-page="/Admin/ListOfUser" class="btn btn-primary">
-                    <i class="bi bi-people"></i> Manage Users
-                </a>
-            </div>
-            <div class="dash-card-b">
-                <ul class="mb-0">
-                    <li>Manage users / roles</li>
-                    <li>Manage projects / datasets</li>
-                    <li>System settings</li>
-                </ul>
-            </div>
-        </div>
-    </div>
+<style>
+    .bg-primary-soft { background-color: rgba(13, 110, 253, 0.1); }
+    .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
+    .bg-info-soft { background-color: rgba(13, 202, 240, 0.1); }
+    .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
+    .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
+    .bg-secondary-soft { background-color: rgba(108, 117, 125, 0.1); }
+    .bg-light-soft { background-color: #f8f9fa; }
+    .bg-light-hover:hover { background-color: #f8f9fa; }
 
-    <div class="col-12 col-xl-4">
-        <div class="dash-card">
-            <div class="dash-card-h fw-semibold">Shortcuts</div>
-            <div class="dash-card-b d-grid gap-2">
-                <a asp-page="/Admin/ListOfUser" class="btn btn-outline-secondary">
-                    <i class="bi bi-person-gear"></i> Users
-                </a>
-                <a asp-page="/Admin/Index" class="btn btn-outline-secondary">
-                    <i class="bi bi-gear"></i> Settings (later)
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
+    .text-primary { color: #0d6efd !important; }
+    .text-success { color: #198754 !important; }
+    .text-info { color: #0dcaf0 !important; }
+    .text-warning { color: #ffc107 !important; }
+
+    .card { border-radius: 1rem; transition: transform 0.2s; }
+    .card:hover { transform: translateY(-3px); }
+
+    .timeline-icon-wrap { position: relative; }
+    .timeline-line { position: absolute; top: 35px; left: 16px; bottom: -20px; width: 2px; background: #e9ecef; }
+    .last-child-no-border .timeline-line { display: none; }
+
+    canvas { max-width: 100%; }
+</style>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // User Distribution Chart
+            const userCtx = document.getElementById('userDistChart').getContext('2d');
+            new Chart(userCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: @Html.Raw(Json.Serialize(Model.Stats.UserDistribution.Select(d => d.RoleName))),
+                    datasets: [{
+                        data: @Html.Raw(Json.Serialize(Model.Stats.UserDistribution.Select(d => d.Count))),
+                        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#0dcaf0', '#6c757d'],
+                        hoverOffset: 15,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                    }
+                }
+            });
+
+            // Project Status Chart
+            const projCtx = document.getElementById('projectStatusChart').getContext('2d');
+            new Chart(projCtx, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(Json.Serialize(Model.Stats.ProjectDistribution.Select(d => d.Status))),
+                    datasets: [{
+                        label: 'Projects',
+                        data: @Html.Raw(Json.Serialize(Model.Stats.ProjectDistribution.Select(d => d.Count))),
+                        backgroundColor: '#0d6efd',
+                        borderRadius: 8,
+                        barThickness: 40
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        });
+    </script>
+}

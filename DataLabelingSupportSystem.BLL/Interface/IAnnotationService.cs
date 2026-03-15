@@ -19,5 +19,8 @@ namespace DataLabelingSupportSystem.BLL.Interface
         Task<List<ReviewQueueItemDto>> GetReviewQueueAsync(int reviewerId);
 
         Task<ReviewSubmissionDetailDto> GetReviewSubmissionDetailAsync(int dataItemSubmissionId, int reviewerId);
+        Task<ProjectYoloExportDto?> GetProjectYoloExportAsync(int projectId);
+        Task<int?> GetNextTaskItemIdAsync(int currentTaskItemId, int annotatorId);
+        Task<int?> GetNextReviewSubmissionIdAsync(int currentSubmissionId);
     }
 }

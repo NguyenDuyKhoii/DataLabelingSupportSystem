@@ -1,4 +1,4 @@
-﻿using DataLabelingSupportSystem.DAL.Models;
+using DataLabelingSupportSystem.DAL.Models;
 using Microsoft.EntityFrameworkCore;
 using static DataLabelingSupportSystem.DAL.Models.Enums;
 

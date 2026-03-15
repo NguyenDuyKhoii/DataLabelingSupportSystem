@@ -1,4 +1,4 @@
-﻿using DataLabelingSupportSystem;
+using DataLabelingSupportSystem;
 using DataLabelingSupportSystem.BLL.Interface;
 using DataLabelingSupportSystem.BLL.Services;
 using DataLabelingSupportSystem.DAL.DbContext;
@@ -21,7 +21,8 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Admin", "AdminOnly");
     options.Conventions.AuthorizeFolder("/Annotator", "AnnotatorOnly");
     options.Conventions.AuthorizeFolder("/Manager", "ManagerOnly");
-    options.Conventions.AuthorizeFolder("/Reviewer", "ReviewerOnly");
+    // We removed folder-level authorization for /Reviewer to allow Manager into the Review page.
+    // Index.cshtml.cs and Review.cshtml.cs now manage their own [Authorize] attributes.
 });
 
 // 1) Register DbContext
@@ -48,6 +49,7 @@ builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 
 builder.Services.AddScoped<IAnnotationService, AnnotationService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 // 3) AuthN (Cookie)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -66,12 +68,11 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AnnotatorOnly", p => p.RequireRole("Annotator"));
     options.AddPolicy("ManagerOnly", p => p.RequireRole("Manager"));
     options.AddPolicy("ReviewerOnly", p => p.RequireRole("Reviewer"));
+    options.AddPolicy("ReviewerOrManager", p => p.RequireRole("Reviewer", "Manager"));
 });
 
 var app = builder.Build();
 
-// Seed test data (only runs if DB has no users)
-await SeedTestData.SeedAsync(app.Services);
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

@@ -65,7 +65,7 @@ public class LoginModel : PageModel
             _ => "/"
         };
 
-        // 2) Chỉ quay lại returnUrl nếu nó là local và KHÔNG phải "/"
+        // 2) Only return to returnUrl if it's local and NOT "/"
         if (!string.IsNullOrWhiteSpace(returnUrl) &&
             Url.IsLocalUrl(returnUrl) &&
             !string.Equals(returnUrl, "/", StringComparison.OrdinalIgnoreCase))

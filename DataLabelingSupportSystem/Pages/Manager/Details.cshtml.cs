@@ -1,4 +1,12 @@
-﻿using DataLabelingSupportSystem.BLL.DTO;
+using System;
+using System.IO;
+using System.IO.Compression;
+using System.Net.Http;
+using System.Text.Json;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using DataLabelingSupportSystem.BLL.DTO;
 using DataLabelingSupportSystem.BLL.Interface;
 using DataLabelingSupportSystem.BLL.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -13,14 +21,16 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
         private readonly IDataItemService _dataItemService;
         private readonly ITaskService _taskService;
         private readonly IUserService _userService;
+        private readonly IAnnotationService _annotationService;
 
-        public DetailsModel(IProjectService projectService, ILabelService labelService, IDataItemService dataItemService, ITaskService taskService, IUserService userService)
+        public DetailsModel(IProjectService projectService, ILabelService labelService, IDataItemService dataItemService, ITaskService taskService, IUserService userService, IAnnotationService annotationService)
         {
             _projectService = projectService;
             _labelService = labelService;
             _dataItemService = dataItemService;
             _taskService = taskService;
             _userService = userService;
+            _annotationService = annotationService;
         }
 
         public ProjectViewDto Project { get; set; } = null!;
@@ -29,6 +39,7 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
         public List<DataItemDto> ProjectDataItems { get; set; } = new();
         public List<TaskViewDto> Tasks { get; set; } = new();
         public List<DataLabelingSupportSystem.DTOs.UserDto> Annotators { get; set; } = new();
+        public ProjectStatsDto? Stats { get; set; }
 
         [BindProperty]
         public CreateLabelDto NewLabel { get; set; } = new();
@@ -46,20 +57,19 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
             ImageUrls = await _dataItemService.GetImagesByProjectIdAsync(id);
             ProjectDataItems = await _dataItemService.GetDataItemsByProjectIdAsync(id);
             Tasks = await _taskService.GetTasksByProjectIdAsync(id);
-            Annotators = await _userService.GetUsersAsync(roleId: 3); // 3 is Annotator using the seeded RoleId
+            Annotators = await _userService.GetUsersAsync(roleId: 3);
+            Stats = await _projectService.GetProjectStatsAsync(id);
             return Page();
         }
 
         public async Task<IActionResult> OnPostAddLabelAsync(int id)
         {
-            // 1) Validate basic (ModelState từ DataAnnotations)
             if (!ModelState.IsValid)
             {
                 await OnGetAsync(id);
                 return Page();
             }
 
-            // 2) Normalize input để tránh lỗi vặt " aaa " vs "aaa"
             NewLabel.Name = (NewLabel.Name ?? "").Trim();
 
             if (string.IsNullOrWhiteSpace(NewLabel.Name))
@@ -69,7 +79,6 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
                 return Page();
             }
 
-            // 3) Check duplicate trước (không cần DbContext)
             var existing = await _labelService.GetLabelsByProjectIdAsync(id);
             var dup = existing.Any(l => string.Equals(l.Name?.Trim(), NewLabel.Name, StringComparison.OrdinalIgnoreCase));
             if (dup)
@@ -79,15 +88,12 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
                 return Page();
             }
 
-            // 4) Try/catch để chống race condition (2 tab cùng add)
             try
             {
                 await _labelService.AddLabelAsync(NewLabel, id);
             }
             catch (Exception ex)
             {
-                // Nếu bạn muốn bắt chặt DbUpdateException thì phải bubble từ service lên;
-                // ở đây bắt general để không 500, và show message an toàn.
                 ModelState.AddModelError(string.Empty, $"Cannot add label. It may already exist. ({ex.Message})");
                 await OnGetAsync(id);
                 return Page();
@@ -96,20 +102,15 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
             return RedirectToPage("Details", new { id });
         }
 
-        // ✅ THÊM MỚI: Handler UPDATE Label
         public async Task<IActionResult> OnPostUpdateLabelAsync(int projectId, int labelId, string labelName, string labelColor)
         {
-            // Tạo DTO để update
             var updateDto = new CreateLabelDto
             {
                 Name = labelName,
                 Color = labelColor
             };
 
-            // Gọi service để update label
             await _labelService.UpdateLabelAsync(labelId, updateDto);
-
-            // Redirect về trang Details
             return RedirectToPage("Details", new { id = projectId });
         }
 
@@ -146,5 +147,80 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
             await _taskService.CreateTaskAsync(dto);
             return RedirectToPage("Details", new { id = projectId });
         }
+
+        public async Task<IActionResult> OnGetExportYoloAsync(int id)
+        {
+            var export = await _annotationService.GetProjectYoloExportAsync(id);
+            if (export == null || !export.Items.Any())
+            {
+                TempData["ErrorMessage"] = "No approved data to export.";
+                return RedirectToPage("Details", new { id });
+            }
+
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+                {
+                    var yamlFile = archive.CreateEntry("data.yaml");
+                    using (var entryStream = yamlFile.Open())
+                    using (var streamWriter = new StreamWriter(entryStream))
+                    {
+                        await streamWriter.WriteLineAsync("path: ./");
+                        await streamWriter.WriteLineAsync("train: train.txt");
+                        await streamWriter.WriteLineAsync("val: train.txt");
+                        await streamWriter.WriteLineAsync($"nc: {export.LabelNamesByOrder.Count}");
+                        await streamWriter.WriteLineAsync("names:");
+                        for (int i = 0; i < export.LabelNamesByOrder.Count; i++)
+                        {
+                            await streamWriter.WriteLineAsync($"  {i}: {export.LabelNamesByOrder[i]}");
+                        }
+                    }
+
+                    var trainListFile = archive.CreateEntry("train.txt");
+                    using (var entryStream = trainListFile.Open())
+                    using (var streamWriter = new StreamWriter(entryStream))
+                    {
+                        foreach (var item in export.Items)
+                        {
+                            var imgExt = Path.GetExtension(item.ImagePath) ?? ".jpg";
+                            var imgFileName = Path.GetFileNameWithoutExtension(item.FileName) + imgExt;
+                            await streamWriter.WriteLineAsync($"images/train/{imgFileName}");
+                        }
+                    }
+
+                    using (var httpClient = new HttpClient())
+                    {
+                        foreach (var item in export.Items)
+                        {
+                            var labelEntry = archive.CreateEntry($"labels/train/{item.FileName}");
+                            using (var entryStream = labelEntry.Open())
+                            using (var streamWriter = new StreamWriter(entryStream))
+                            {
+                                foreach (var line in item.YoloLines)
+                                {
+                                    await streamWriter.WriteLineAsync(line);
+                                }
+                            }
+
+                            try
+                            {
+                                var imgData = await httpClient.GetByteArrayAsync(item.ImagePath);
+                                var imgExt = Path.GetExtension(item.ImagePath) ?? ".jpg";
+                                var imgFileName = Path.GetFileNameWithoutExtension(item.FileName) + imgExt;
+
+                                var imgEntry = archive.CreateEntry($"images/train/{imgFileName}");
+                                using (var entryStream = imgEntry.Open())
+                                {
+                                    await entryStream.WriteAsync(imgData, 0, imgData.Length);
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                }
+
+                return File(memoryStream.ToArray(), "application/zip", $"YOLO_Ultralytics_{export.ProjectName}_{DateTime.Now:yyyyMMdd}.zip");
+            }
+        }
     }
-}
+}

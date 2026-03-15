@@ -59,7 +59,7 @@
 
                 <div class="col-12 col-md-4">
                     <label class="form-label fw-semibold" style="font-size:13px;">Role</label>
-                    <!-- giữ nguyên name="RoleId" + asp-items -->
+                    <!-- keep name="RoleId" + asp-items -->
                     <select name="RoleId" class="form-select" asp-items="Model.RoleList" style="border-radius:14px;">
                         <option value="">-- All --</option>
                     </select>
@@ -262,7 +262,7 @@
 
             <form method="post" asp-page-handler="Create" id="createUserForm" autocomplete="off">
                 <div class="modal-body">
-                    <!-- FIX: dùng d-none để ẩn, tránh d-flex override -->
+                    <!-- FIX: use d-none to hide, avoid d-flex override -->
                     <div class="alert alert-danger align-items-start gap-2 d-none" role="alert">
                         <i class="bi bi-exclamation-triangle-fill mt-1"></i>
                         <div class="error-msg"></div>
@@ -361,12 +361,12 @@
 
             <form method="post" asp-page-handler="Update" id="updateUserForm">
                 <input type="hidden" asp-for="UpdateUserInput.UserId" id="updateUserId" />
-                <!-- Anti-autofill: browser sẽ fill vào 2 field mồi này thay vì field thật -->
+                <!-- Anti-autofill: browser will fill these 2 dummy fields instead of real ones -->
                 <input type="text" name="fake_username" autocomplete="username" class="d-none" />
                 <input type="password" name="fake_password" autocomplete="current-password" class="d-none" />
 
                 <div class="modal-body">
-                    <!-- FIX: dùng d-none để ẩn, tránh d-flex override -->
+                    <!-- FIX: use d-none to hide, avoid d-flex override -->
                     <div class="alert alert-danger align-items-start gap-2 d-none" role="alert">
                         <i class="bi bi-exclamation-triangle-fill mt-1"></i>
                         <div class="error-msg"></div>
@@ -491,7 +491,7 @@
                     var form = document.getElementById(formId);
                     if (form) form.reset();
 
-                    // FIX: hide alert bằng d-none (không dùng style.display vì dễ conflict bootstrap)
+                    // FIX: hide alert using d-none (don't use style.display to avoid bootstrap conflict)
                     var alertDiv = modalElem.querySelector('.alert-danger');
                     if (alertDiv) alertDiv.classList.add('d-none');
 
@@ -538,7 +538,7 @@
 
                                 if (errorBox) errorBox.innerHTML = errorText;
 
-                                // FIX: show alert bằng d-none
+                                // FIX: show alert using d-none
                                 if (alertDiv) alertDiv.classList.remove('d-none');
                             }
                         })

@@ -2,6 +2,7 @@
 using DataLabelingSupportSystem.BLL.Interface;
 using DataLabelingSupportSystem.DAL.Interfaces;
 using DataLabelingSupportSystem.DAL.Models;
+using DataLabelingSupportSystem.DAL.DbContext;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -15,10 +16,12 @@ namespace DataLabelingSupportSystem.BLL.Services
     public class ProjectService : IProjectService
     {
         private readonly IProjectRepository _repository;
+        private readonly AppDbContext _db;
 
-        public ProjectService(IProjectRepository repository)
+        public ProjectService(IProjectRepository repository, AppDbContext db)
         {
             _repository = repository;
+            _db = db;
         }
         public async Task CreateProjectAsync(CreateProjectDto dto, int managerId)
         {
@@ -78,6 +81,79 @@ namespace DataLabelingSupportSystem.BLL.Services
 
                 await _repository.UpdateAsync(project);
             }
+        }
+        public async Task<ProjectStatsDto?> GetProjectStatsAsync(int projectId)
+        {
+            var project = await _db.Projects
+                .Include(p => p.Labels)
+                .Include(p => p.DataItems)
+                    .ThenInclude(di => di.TaskItems)
+                        .ThenInclude(ti => ti.Submissions)
+                .FirstOrDefaultAsync(p => p.ProjectId == projectId);
+
+            if (project == null) return null;
+
+            var stats = new ProjectStatsDto
+            {
+                ProjectId = project.ProjectId,
+                ProjectName = project.Name,
+                TotalImages = project.DataItems.Count
+            };
+
+            // Image statuses
+            int approved = 0, rejected = 0, pending = 0, unassigned = 0;
+
+            foreach (var di in project.DataItems)
+            {
+                if (!di.TaskItems.Any())
+                {
+                    unassigned++;
+                    continue;
+                }
+
+                // Lấy submission mới nhất (loại bỏ sentinel draft)
+                var latest = di.TaskItems.SelectMany(ti => ti.Submissions)
+                    .Where(s => s.SubmittedAt.Year != 1900)
+                    .OrderByDescending(s => s.DataItemSubmissionId)
+                    .FirstOrDefault();
+
+                if (latest == null) unassigned++; // Đã gán task nhưng chưa làm/save nháp? Thực tế là "Assigned"
+                else if (latest.Status == SubmissionStatus.Approved) approved++;
+                else if (latest.Status == SubmissionStatus.Rejected) rejected++;
+                else pending++;
+            }
+
+            stats.ApprovedImages = approved;
+            stats.RejectedImages = rejected;
+            stats.PendingImages = pending;
+            stats.UnassignedImages = unassigned;
+
+            // Label Distribution (chỉ tính từ các bản Approved)
+            stats.LabelDistribution = await _db.Annotations
+                .Where(a => a.Submission.Status == SubmissionStatus.Approved && a.Label.ProjectId == projectId)
+                .GroupBy(a => new { a.Label.Name, a.Label.Color })
+                .Select(g => new LabelCountDto
+                {
+                    LabelName = g.Key.Name,
+                    Color = g.Key.Color,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            // Daily Progress (Approved per day)
+            stats.DailyProgress = await _db.DataItemReviews
+                .Where(r => r.Decision == ReviewDecision.Approved && r.Submission.TaskItem.DataItem.ProjectId == projectId)
+                .GroupBy(r => r.ReviewedAt.Date)
+                .OrderBy(g => g.Key)
+                .Select(g => new DailyProgressDto
+                {
+                    Date = g.Key,
+                    Count = g.Count()
+                })
+                .Take(15) // Top 15 days
+                .ToListAsync();
+
+            return stats;
         }
     }
 }

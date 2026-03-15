@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace DataLabelingSupportSystem.UI.Pages.Reviewer
 {
-    [Authorize(Roles = "Reviewer")]
+    [Authorize(Roles = "Reviewer,Manager")]
     public class ReviewModel : PageModel
     {
         private readonly IAnnotationService _annotationService;
@@ -63,7 +63,8 @@ namespace DataLabelingSupportSystem.UI.Pages.Reviewer
             {
                 var reviewerId = GetUserId();
                 await _annotationService.ApproveAsync(submissionId, reviewerId, comment ?? "");
-                return new JsonResult(new { ok = true });
+                var nextId = await _annotationService.GetNextReviewSubmissionIdAsync(submissionId);
+                return new JsonResult(new { ok = true, nextSubmissionId = nextId });
             }
             catch (Exception ex)
             {
@@ -78,7 +79,8 @@ namespace DataLabelingSupportSystem.UI.Pages.Reviewer
             {
                 var reviewerId = GetUserId();
                 await _annotationService.RejectAsync(submissionId, reviewerId, comment ?? "");
-                return new JsonResult(new { ok = true });
+                var nextId = await _annotationService.GetNextReviewSubmissionIdAsync(submissionId);
+                return new JsonResult(new { ok = true, nextSubmissionId = nextId });
             }
             catch (Exception ex)
             {

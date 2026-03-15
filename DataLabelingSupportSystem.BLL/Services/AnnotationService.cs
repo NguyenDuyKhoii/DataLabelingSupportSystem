@@ -4,6 +4,7 @@ using DataLabelingSupportSystem.DAL.DbContext;
 using DataLabelingSupportSystem.DAL.Models;
 using Microsoft.EntityFrameworkCore;
 using static DataLabelingSupportSystem.DAL.Models.Enums;
+using System.IO;
 
 namespace DataLabelingSupportSystem.BLL.Services
 {
@@ -18,8 +19,8 @@ namespace DataLabelingSupportSystem.BLL.Services
             _labelService = labelService;
         }
 
-        // Sentinel để biểu diễn "Saved but not submitted" mà không đổi schema
-        // IMPORTANT: SQL Server/EF thường trả DateTime.Kind = Unspecified => không dùng ToUniversalTime() để so sánh sentinel.
+        // Sentinel Ä‘á»ƒ biá»ƒu diá»…n "Saved but not submitted" mÃ  khÃ´ng Ä‘á»•i schema
+        // IMPORTANT: SQL Server/EF thÆ°á»ng tráº£ DateTime.Kind = Unspecified => khÃ´ng dÃ¹ng ToUniversalTime() Ä‘á»ƒ so sÃ¡nh sentinel.
         private static readonly DateTime SentinelSubmittedAt =
             new DateTime(1900, 1, 1, 0, 0, 0); // Kind: Unspecified
 
@@ -36,7 +37,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                 throw new UnauthorizedAccessException("Access denied for this TaskItem.");
         }
         // ---------------------------
-        // Helpers: luôn làm việc với DRAFT (sentinel) để Save != Submit
+        // Helpers: luÃ´n lÃ m viá»‡c vá»›i DRAFT (sentinel) Ä‘á»ƒ Save != Submit
         // ---------------------------
         private IQueryable<DataItemSubmission> SubmissionsOf(int taskItemId, int userId)
             => _db.DataItemSubmissions.Where(s => s.TaskItemId == taskItemId && s.SubmittedBy == userId);
@@ -49,7 +50,7 @@ namespace DataLabelingSupportSystem.BLL.Services
 
         private async Task<DataItemSubmission> GetOrCreateDraftAsync(int taskItemId, int userId)
         {
-            // Serializable để tránh 2 request đồng thời cùng "không thấy draft" rồi tạo 2 draft sentinel.
+            // Serializable Ä‘á»ƒ trÃ¡nh 2 request Ä‘á»“ng thá»i cÃ¹ng "khÃ´ng tháº¥y draft" rá»“i táº¡o 2 draft sentinel.
             await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
 
             var draft = await GetLatestDraftAsync(taskItemId, userId);
@@ -59,7 +60,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                 return draft;
             }
 
-            // Rework: nếu submission mới nhất bị Rejected → tạo draft mới + copy annotations
+            // Rework: náº¿u submission má»›i nháº¥t bá»‹ Rejected â†’ táº¡o draft má»›i + copy annotations
             var submissions = await SubmissionsOf(taskItemId, userId)
                 .OrderByDescending(s => s.DataItemSubmissionId)
                 .ToListAsync();
@@ -76,13 +77,13 @@ namespace DataLabelingSupportSystem.BLL.Services
                 TaskItemId = taskItemId,
                 SubmittedBy = userId,
                 SubmittedAt = SentinelSubmittedAt,
-                Status = SubmissionStatus.Submitted // draft phân biệt bằng sentinel
+                Status = SubmissionStatus.Submitted // draft phÃ¢n biá»‡t báº±ng sentinel
             };
 
             _db.DataItemSubmissions.Add(created);
             await _db.SaveChangesAsync();
 
-            // Copy annotations từ submission bị reject để Annotator có điểm bắt đầu sửa
+            // Copy annotations tá»« submission bá»‹ reject Ä‘á»ƒ Annotator cÃ³ Ä‘iá»ƒm báº¯t Ä‘áº§u sá»­a
             if (latestRejected != null)
             {
                 var oldAnnotations = await _db.Annotations
@@ -98,7 +99,9 @@ namespace DataLabelingSupportSystem.BLL.Services
                         X = a.X,
                         Y = a.Y,
                         Width = a.Width,
-                        Height = a.Height
+                        Height = a.Height,
+                        IsOccluded = a.IsOccluded,
+                        IsTruncated = a.IsTruncated
                     });
 
                     _db.Annotations.AddRange(copied);
@@ -121,8 +124,8 @@ namespace DataLabelingSupportSystem.BLL.Services
             if (taskItem == null) return null;
             await EnsureAnnotatorOwnsTaskItemAsync(taskItemId, annotatorId);
             // IMPORTANT:
-            // Context ưu tiên "draft hiện tại" (Saved-but-not-submitted).
-            // Nếu không có draft thì fallback sang submission mới nhất để UI không bị rỗng sau khi Submit.
+            // Context Æ°u tiÃªn "draft hiá»‡n táº¡i" (Saved-but-not-submitted).
+            // Náº¿u khÃ´ng cÃ³ draft thÃ¬ fallback sang submission má»›i nháº¥t Ä‘á»ƒ UI khÃ´ng bá»‹ rá»—ng sau khi Submit.
             var draft = taskItem.Submissions
                 .Where(s => s.SubmittedBy == annotatorId && s.SubmittedAt == SentinelSubmittedAt)
                 .OrderByDescending(s => s.DataItemSubmissionId)
@@ -135,9 +138,9 @@ namespace DataLabelingSupportSystem.BLL.Services
 
             var display = draft ?? latest;
 
-            // NOTE (flow chuẩn theo schema + yêu cầu):
-            // - KHÔNG tạo DataItemSubmission khi mở trang (GET).
-            // - Submission chỉ tạo khi Save/Submit lần đầu (POST).
+            // NOTE (flow chuáº©n theo schema + yÃªu cáº§u):
+            // - KHÃ”NG táº¡o DataItemSubmission khi má»Ÿ trang (GET).
+            // - Submission chá»‰ táº¡o khi Save/Submit láº§n Ä‘áº§u (POST).
             var labels = await _labelService.GetLabelsByProjectIdAsync(taskItem.Task.ProjectId);
 
             bool canEdit;
@@ -147,13 +150,13 @@ namespace DataLabelingSupportSystem.BLL.Services
             }
             else
             {
-                // Khi đã vào review/final thì khóa edit để tránh sửa ngược luồng
-                // Rejected → cho phép rework (canEdit = true)
+                // Khi Ä‘Ã£ vÃ o review/final thÃ¬ khÃ³a edit Ä‘á»ƒ trÃ¡nh sá»­a ngÆ°á»£c luá»“ng
+                // Rejected â†’ cho phÃ©p rework (canEdit = true)
                 canEdit = display.Status != SubmissionStatus.InReview
                           && display.Status != SubmissionStatus.Approved;
             }
 
-            // Load review comment nếu submission mới nhất bị Rejected (hiển thị lý do cho Annotator)
+            // Load review comment náº¿u submission má»›i nháº¥t bá»‹ Rejected (hiá»ƒn thá»‹ lÃ½ do cho Annotator)
             string? reviewComment = null;
             if (display != null && display.Status == SubmissionStatus.Rejected)
             {
@@ -184,7 +187,7 @@ namespace DataLabelingSupportSystem.BLL.Services
         {
             if (boxes == null) boxes = new List<AnnotationBoxDto>();
 
-            // 1) Load TaskItem + ProjectId (để check Label thuộc project)
+            // 1) Load TaskItem + ProjectId (Ä‘á»ƒ check Label thuá»™c project)
             var taskItem = await _db.TaskItems
                 .Include(ti => ti.DataItem)
                 .ThenInclude(di => di.Project)
@@ -224,10 +227,10 @@ namespace DataLabelingSupportSystem.BLL.Services
             }
 
             // 4) Get or Create DRAFT submission (first save creates it)
-            // IMPORTANT: luôn dùng draft (sentinel) để Save không bị chặn bởi submission thật cũ.
+            // IMPORTANT: luÃ´n dÃ¹ng draft (sentinel) Ä‘á»ƒ Save khÃ´ng bá»‹ cháº·n bá»Ÿi submission tháº­t cÅ©.
             var submission = await GetOrCreateDraftAsync(taskItemId, annotatorId);
 
-            // Khóa edit khi đã vào review/final (Rejected cho phép rework qua draft mới)
+            // KhÃ³a edit khi Ä‘Ã£ vÃ o review/final (Rejected cho phÃ©p rework qua draft má»›i)
             if (submission.Status == SubmissionStatus.InReview
                 || submission.Status == SubmissionStatus.Approved)
             {
@@ -251,7 +254,9 @@ namespace DataLabelingSupportSystem.BLL.Services
                     X = b.X,
                     Y = b.Y,
                     Width = b.Width,
-                    Height = b.Height
+                    Height = b.Height,
+                    IsOccluded = b.IsOccluded,
+                    IsTruncated = b.IsTruncated
                 });
 
                 _db.Annotations.AddRange(newEntities);
@@ -265,8 +270,8 @@ namespace DataLabelingSupportSystem.BLL.Services
         public async Task<List<AnnotationBoxDto>> GetSavedBoxesAsync(int taskItemId, int annotatorId)
         {
             await EnsureAnnotatorOwnsTaskItemAsync(taskItemId, annotatorId);
-            // Load ưu tiên DRAFT (nháp). Nếu không còn draft (đã Submit) thì fallback sang submission mới nhất
-            // để tránh UX "Submit xong quay lại bị rỗng".
+            // Load Æ°u tiÃªn DRAFT (nhÃ¡p). Náº¿u khÃ´ng cÃ²n draft (Ä‘Ã£ Submit) thÃ¬ fallback sang submission má»›i nháº¥t
+            // Ä‘á»ƒ trÃ¡nh UX "Submit xong quay láº¡i bá»‹ rá»—ng".
             var draft = await GetLatestDraftAsync(taskItemId, annotatorId);
 
             DataItemSubmission? submission = draft;
@@ -289,7 +294,9 @@ namespace DataLabelingSupportSystem.BLL.Services
                     X = a.X,
                     Y = a.Y,
                     Width = a.Width,
-                    Height = a.Height
+                    Height = a.Height,
+                    IsOccluded = a.IsOccluded,
+                    IsTruncated = a.IsTruncated
                 })
                 .ToListAsync();
 
@@ -299,24 +306,24 @@ namespace DataLabelingSupportSystem.BLL.Services
         public async Task SubmitAsync(int taskItemId, int annotatorId)
         {
             await EnsureAnnotatorOwnsTaskItemAsync(taskItemId, annotatorId);
-            // Submit chỉ chốt DRAFT hiện tại
+            // Submit chá»‰ chá»‘t DRAFT hiá»‡n táº¡i
             var submission = await GetLatestDraftAsync(taskItemId, annotatorId);
 
             if (submission == null)
                 throw new Exception("There are no annotations have been saved yet.");
 
-            // Rule tối thiểu: phải có ít nhất 1 bbox
+            // Rule tá»‘i thiá»ƒu: pháº£i cÃ³ Ã­t nháº¥t 1 bbox
             var hasAny = await _db.Annotations
                 .AnyAsync(a => a.DataItemSubmissionId == submission.DataItemSubmissionId);
 
             if (!hasAny)
                 throw new Exception("There are currently no bbox.");
 
-            // Nếu đã Approved thì thường không cho submit lại (tuỳ bạn)
+            // Náº¿u Ä‘Ã£ Approved thÃ¬ thÆ°á»ng khÃ´ng cho submit láº¡i (tuá»³ báº¡n)
             if (submission.Status == SubmissionStatus.Approved)
                 throw new Exception("This submission has been approved and cannot be submitted again.");
 
-            // Draft luôn sentinel. Nếu (bất thường) draft không sentinel thì chặn.
+            // Draft luÃ´n sentinel. Náº¿u (báº¥t thÆ°á»ng) draft khÃ´ng sentinel thÃ¬ cháº·n.
             if (!IsSentinel(submission.SubmittedAt))
                 throw new Exception("This submission has already been submitted.");
 
@@ -360,7 +367,7 @@ namespace DataLabelingSupportSystem.BLL.Services
             await DecideAsync(dataItemSubmissionId, reviewerId, ReviewDecision.Rejected, comment);
         }
 
-        // helper private method (đặt ngay dưới 2 method trên)
+        // helper private method (Ä‘áº·t ngay dÆ°á»›i 2 method trÃªn)
         private async Task DecideAsync(int submissionId, int reviewerId, ReviewDecision decision, string? comment)
         {
             var submission = await _db.DataItemSubmissions
@@ -393,7 +400,7 @@ namespace DataLabelingSupportSystem.BLL.Services
 
             await _db.SaveChangesAsync();
 
-            // Completion Rule: nếu Approved thì check xem Task đã hoàn thành chưa
+            // Completion Rule: náº¿u Approved thÃ¬ check xem Task Ä‘Ã£ hoÃ n thÃ nh chÆ°a
             if (decision == ReviewDecision.Approved)
             {
                 await TryCompleteTaskAsync(submission.TaskItemId);
@@ -401,8 +408,8 @@ namespace DataLabelingSupportSystem.BLL.Services
         }
 
         /// <summary>
-        /// Kiểm tra nếu tất cả TaskItem trong cùng Task đều có submission mới nhất Approved
-        /// thì tự động set TaskEntity.Status = Completed.
+        /// Kiá»ƒm tra náº¿u táº¥t cáº£ TaskItem trong cÃ¹ng Task Ä‘á»u cÃ³ submission má»›i nháº¥t Approved
+        /// thÃ¬ tá»± Ä‘á»™ng set TaskEntity.Status = Completed.
         /// </summary>
         private async Task TryCompleteTaskAsync(int taskItemId)
         {
@@ -445,7 +452,7 @@ namespace DataLabelingSupportSystem.BLL.Services
             if (submission == null)
                 throw new InvalidOperationException("Submission not found.");
 
-            // chặn draft sentinel (Save != Submit)
+            // cháº·n draft sentinel (Save != Submit)
             if (IsSentinel(submission.SubmittedAt))
                 throw new InvalidOperationException("Submission has not been submitted yet.");
 
@@ -467,12 +474,14 @@ namespace DataLabelingSupportSystem.BLL.Services
                         X = a.X,
                         Y = a.Y,
                         Width = a.Width,
-                        Height = a.Height
+                        Height = a.Height,
+                        IsOccluded = a.IsOccluded,
+                        IsTruncated = a.IsTruncated
                     })
                     .ToList()
             };
 
-            // (để vẽ đúng màu label)
+            // (Ä‘á»ƒ váº½ Ä‘Ãºng mÃ u label)
             dto.LabelColors = submission.Annotations
                              .GroupBy(a => a.LabelId)
                              .ToDictionary(g => g.Key, g => g.First().Label.Color);
@@ -481,7 +490,7 @@ namespace DataLabelingSupportSystem.BLL.Services
         }
         public async Task<List<ReviewQueueItemDto>> GetReviewQueueAsync(int reviewerId)
         {
-            // reviewerId chưa dùng ở rule hiện tại, nhưng để sẵn cho phân quyền/assign sau này
+            // reviewerId chÆ°a dÃ¹ng á»Ÿ rule hiá»‡n táº¡i, nhÆ°ng Ä‘á»ƒ sáºµn cho phÃ¢n quyá»n/assign sau nÃ y
 
             var sentinel = SentinelSubmittedAt;
 
@@ -489,7 +498,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                 .AsNoTracking()
                 .Where(s => s.SubmittedAt != sentinel);
 
-            // Sort: Submitted → InReview → Approved → Rejected; trong mỗi nhóm thì SubmittedAt mới nhất trước
+            // Sort: Submitted â†’ InReview â†’ Approved â†’ Rejected; trong má»—i nhÃ³m thÃ¬ SubmittedAt má»›i nháº¥t trÆ°á»›c
             query = query
                 .OrderBy(s => s.Status == SubmissionStatus.Submitted ? 0 :
                               s.Status == SubmissionStatus.InReview ? 1 :
@@ -507,6 +516,99 @@ namespace DataLabelingSupportSystem.BLL.Services
                     Status = s.Status.ToString()
                 })
                 .ToListAsync();
+        }
+
+        public async Task<ProjectYoloExportDto?> GetProjectYoloExportAsync(int projectId)
+        {
+            var project = await _db.Projects
+                .Include(p => p.Labels)
+                .Include(p => p.DataItems)
+                    .ThenInclude(di => di.TaskItems)
+                        .ThenInclude(ti => ti.Submissions)
+                            .ThenInclude(s => s.Annotations)
+                .FirstOrDefaultAsync(p => p.ProjectId == projectId);
+
+            if (project == null) return null;
+
+            var labelOrder = project.Labels.OrderBy(l => l.LabelId).ToList();
+            var labelMap = labelOrder
+                .Select((l, index) => new { l.LabelId, Index = index })
+                .ToDictionary(x => x.LabelId, x => x.Index);
+
+            var export = new ProjectYoloExportDto
+            {
+                ProjectName = project.Name,
+                LabelNamesByOrder = labelOrder.Select(l => l.Name).ToList()
+            };
+
+            foreach (var di in project.DataItems)
+            {
+                var latestApproved = di.TaskItems
+                    .SelectMany(ti => ti.Submissions)
+                    .Where(s => s.Status == SubmissionStatus.Approved)
+                    .OrderByDescending(s => s.DataItemSubmissionId)
+                    .FirstOrDefault();
+
+                if (latestApproved == null) continue;
+
+                var item = new YoloItemDto
+                {
+                    FileName = Path.GetFileNameWithoutExtension(di.ImagePath) + ".txt",
+                    ImagePath = di.ImagePath
+                };
+
+                foreach (var ann in latestApproved.Annotations)
+                {
+                    if (labelMap.TryGetValue(ann.LabelId, out int classIdx))
+                    {
+                        float xCenter = (float)(ann.X + ann.Width / 2);
+                        float yCenter = (float)(ann.Y + ann.Height / 2);
+                        item.YoloLines.Add($"{classIdx} {xCenter:0.000000} {yCenter:0.000000} {ann.Width:0.000000} {ann.Height:0.000000}");
+                    }
+                }
+
+                if (item.YoloLines.Any())
+                {
+                    export.Items.Add(item);
+                }
+            }
+
+            return export;
+        }
+
+        public async Task<int?> GetNextTaskItemIdAsync(int currentTaskItemId, int annotatorId)
+        {
+            var currentItem = await _db.TaskItems
+                .Include(ti => ti.Task)
+                .FirstOrDefaultAsync(ti => ti.TaskItemId == currentTaskItemId && ti.Task.AnnotatorId == annotatorId);
+
+            if (currentItem == null) return null;
+
+            var nextItem = await _db.TaskItems
+                .Where(ti => ti.TaskId == currentItem.TaskId && ti.TaskItemId > currentTaskItemId)
+                .OrderBy(ti => ti.TaskItemId)
+                .Select(ti => new { 
+                    ti.TaskItemId, 
+                    IsApproved = ti.Submissions.Any(s => s.Status == SubmissionStatus.Approved) 
+                })
+                .FirstOrDefaultAsync(ti => !ti.IsApproved);
+
+            return nextItem?.TaskItemId;
+        }
+        public async Task<int?> GetNextReviewSubmissionIdAsync(int currentSubmissionId)
+        {
+            var current = await _db.DataItemSubmissions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.DataItemSubmissionId == currentSubmissionId);
+            if (current == null) return null;
+            var next = await _db.DataItemSubmissions
+                .AsNoTracking()
+                .Where(s => s.DataItemSubmissionId > currentSubmissionId 
+                            && (s.Status == SubmissionStatus.Submitted || s.Status == SubmissionStatus.InReview))
+                .OrderBy(s => s.DataItemSubmissionId)
+                .Select(s => (int?)s.DataItemSubmissionId)
+                .FirstOrDefaultAsync();
+            return next;
         }
     }
 }

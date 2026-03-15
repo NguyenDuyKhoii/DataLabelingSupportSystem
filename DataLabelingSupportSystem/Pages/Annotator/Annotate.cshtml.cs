@@ -1,4 +1,4 @@
-﻿using DataLabelingSupportSystem.BLL.DTO;
+using DataLabelingSupportSystem.BLL.DTO;
 using DataLabelingSupportSystem.BLL.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +18,7 @@ namespace DataLabelingSupportSystem.UI.Pages.Annotator
             _annotationService = annotationService;
         }
 
-        // ✅ 1 property duy nhất để UI đọc
+        // Single property for UI to read
         public AnnotateContextDto Vm { get; private set; } = null!;
 
         [BindProperty]
@@ -41,7 +41,7 @@ namespace DataLabelingSupportSystem.UI.Pages.Annotator
         }
 
         // ✅ NEW: GET /Annotator/Annotate/{taskItemId}?handler=Boxes
-        // trả về list bbox đã lưu để UI render lại khi reload trang
+        // Return list of saved bboxes for UI to re-render on reload
         public async Task<IActionResult> OnGetBoxesAsync(int taskItemId)
         {
             var annotatorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -81,11 +81,12 @@ namespace DataLabelingSupportSystem.UI.Pages.Annotator
         public async Task<IActionResult> OnPostSubmitAsync()
         {
             var annotatorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
             try
             {
                 await _annotationService.SubmitAsync(TaskItemId, annotatorId);
-                return new JsonResult(new { ok = true });
+                var nextId = await _annotationService.GetNextTaskItemIdAsync(TaskItemId, annotatorId);
+
+                return new JsonResult(new { ok = true, nextTaskItemId = nextId });
             }
             catch (Exception ex)
             {

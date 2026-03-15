@@ -8,6 +8,7 @@ namespace DataLabelingSupportSystem.BLL.DTO
 
         // New properties for status notification
         public DataLabelingSupportSystem.DAL.Models.Enums.SubmissionStatus? LatestStatus { get; set; }
+        public int? LatestSubmissionId { get; set; }
         public string? ReviewComment { get; set; }
     }
 }

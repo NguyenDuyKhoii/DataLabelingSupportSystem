@@ -1,4 +1,4 @@
-﻿@page "{taskItemId:int}"
+@page "{taskItemId:int}"
 @model DataLabelingSupportSystem.UI.Pages.Annotator.AnnotateModel
 @{
     ViewData["Title"] = "Annotate";
@@ -22,8 +22,8 @@
         <div class="alert alert-success d-flex align-items-start gap-2 mb-3" role="alert">
             <i class="bi bi-check-circle-fill fs-5 mt-1"></i>
             <div>
-                <strong>Bức ảnh này đã được Approve!</strong>
-                <div class="mt-1">Nghiệm thu hoàn tất, bạn không thể chỉnh sửa thêm.</div>
+                <strong>This image has been Approved!</strong>
+                <div class="mt-1">Final approval complete, no further edits allowed.</div>
             </div>
         </div>
     }
@@ -33,12 +33,12 @@
         <div class="alert alert-danger d-flex align-items-start gap-2 mb-3" role="alert">
             <i class="bi bi-exclamation-triangle-fill fs-5 mt-1"></i>
             <div>
-                <strong>Submission bị Reject!</strong>
+                <strong>Submission Rejected!</strong>
                 @if (!string.IsNullOrWhiteSpace(Model.Vm.ReviewComment))
                 {
-                    <div class="mt-1">Lý do: <em>@Model.Vm.ReviewComment</em></div>
+                    <div class="mt-1">Reason: <em>@Model.Vm.ReviewComment</em></div>
                 }
-                <div class="mt-1 text-muted small">Vui lòng chỉnh sửa annotations và Submit lại.</div>
+                <div class="mt-1 text-muted small">Please edit annotations and re-submit.</div>
             </div>
         </div>
     }
@@ -64,7 +64,7 @@
                                  style="max-height:520px; width:100%; object-fit:contain; display:block;"
                                  alt="Data Item" />
 
-                            <!-- overlay để vẽ bbox -->
+                            <!-- overlay to draw bbox -->
                             <div id="overlay"
                                  style="position:absolute; inset:0; cursor:crosshair;">
                             </div>
@@ -72,7 +72,7 @@
                     </div>
 
                     <div class="text-muted small mt-2">
-                        Cách dùng: chọn label bên phải → kéo thả chuột trên ảnh để tạo bbox.
+                        Usage: select a label on the right → click and drag on the image to create a bbox.
                     </div>
 
                 </div>
@@ -151,7 +151,7 @@
                     </button>
 
                     <div class="text-muted small mt-2">
-                        Save: lưu toàn bộ bbox hiện tại.
+                        Save: save all current bboxes as a draft.
                     </div>
                 </div>
             </div>
@@ -175,7 +175,7 @@
                     </div>
 
                     <div class="text-muted small mt-2">
-                        Tip: box quá nhỏ sẽ bị bỏ qua.
+                        Tip: boxes that are too small will be ignored.
                     </div>
                 </div>
             </div>
@@ -487,7 +487,7 @@
             btnSubmit?.addEventListener('click', async function () {
                 if (!canEdit) return;
 
-                if (!confirm("Submit sẽ đánh dấu hoàn tất. Bạn muốn Submit không?")) return;
+                if (!confirm("Submitting will mark it as final. Do you want to submit?")) return;
 
                 try {
                     const res = await fetch(`?handler=Submit`, {
@@ -502,7 +502,11 @@
                     }
 
                     alert("Submitted!");
-                    // location.reload(); // nếu muốn tự reload để thấy status/read-only ngay
+                    if (data.nextTaskItemId) {
+                        window.location.href = `/Annotator/Annotate/${data.nextTaskItemId}`;
+                    } else {
+                        location.reload(); 
+                    }
                 } catch (e) {
                     alert('Error: ' + e);
                 }
@@ -512,6 +516,50 @@
             renderOverlay();
             renderList();
             loadSavedBoxes();
+
+            // ========= PRECISION CROSSHAIR =========
+            const chX = document.createElement('div');
+            const chY = document.createElement('div');
+            [chX, chY].forEach(line => {
+                line.style.position = 'absolute';
+                line.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                line.style.pointerEvents = 'none';
+                line.style.zIndex = '10';
+                line.style.display = 'none';
+                overlay.appendChild(line);
+            });
+            chX.style.width = '1px'; chX.style.height = '100%';
+            chY.style.height = '1px'; chY.style.width = '100%';
+
+            overlay.addEventListener('mouseenter', () => { chX.style.display = 'block'; chY.style.display = 'block'; });
+            overlay.addEventListener('mouseleave', () => { chX.style.display = 'none'; chY.style.display = 'none'; });
+            overlay.addEventListener('mousemove', (e) => {
+                const r = overlay.getBoundingClientRect();
+                const x = e.clientX - r.left;
+                const y = e.clientY - r.top;
+                chX.style.left = x + 'px';
+                chY.style.top = y + 'px';
+            });
+
+            // ========= HOTKEYS =========
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                const key = e.key.toUpperCase();
+                if (key === 'S') {
+                    e.preventDefault();
+                    btnSave.click();
+                } else if (key === 'Q') {
+                    e.preventDefault();
+                    btnSubmit.click();
+                } else if (e.key >= '1' && e.key <= '9') {
+                    const idx = parseInt(e.key) - 1;
+                    const radios = document.querySelectorAll('input[name="selectedLabelId"]');
+                    if (radios[idx]) {
+                        radios[idx].checked = true;
+                    }
+                }
+            });
 
         })();
     </script>

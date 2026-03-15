@@ -1,4 +1,4 @@
-﻿namespace DataLabelingSupportSystem.BLL.DTO
+namespace DataLabelingSupportSystem.BLL.DTO
 {
     public class AnnotationBoxDto
     {
@@ -9,5 +9,8 @@
         public float Y { get; set; }
         public float Width { get; set; }
         public float Height { get; set; }
+
+        public bool IsOccluded { get; set; }
+        public bool IsTruncated { get; set; }
     }
 }

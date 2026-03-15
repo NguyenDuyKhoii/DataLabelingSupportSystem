@@ -24,7 +24,7 @@ namespace DataLabelingSupportSystem.UI.Pages.Manager
             var p = await _projectService.GetProjectByIdAsync(id);
             if (p == null) return NotFound();
 
-            // Đổ dữ liệu cũ vào Form
+            // Seed old data into the form
             Input = new UpdateProjectDto
             {
                 Id = p.Id,

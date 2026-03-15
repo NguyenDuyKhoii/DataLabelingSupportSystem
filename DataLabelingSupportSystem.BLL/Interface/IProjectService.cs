@@ -14,5 +14,6 @@ namespace DataLabelingSupportSystem.BLL.Interface
 
         Task<ProjectViewDto?> GetProjectByIdAsync(int projectId);
         Task UpdateProjectAsync(UpdateProjectDto dto);
+        Task<ProjectStatsDto?> GetProjectStatsAsync(int projectId);
     }
 }

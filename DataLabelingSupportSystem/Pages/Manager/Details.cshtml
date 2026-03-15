@@ -1,4 +1,4 @@
-﻿@page "{id:int}"
+@page "{id:int}"
 @using System.Text.Json
 @model DataLabelingSupportSystem.UI.Pages.Manager.DetailsModel
 @{
@@ -12,14 +12,17 @@
             <div class="text-muted" style="font-size:13px;">@Model.Project.Description</div>
         </div>
 
-        <div class="d-flex gap-2">
-            <a asp-page="/Manager/Index" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back
-            </a>
-            <a asp-page="/Manager/EditProject" asp-route-id="@Model.Project.Id" class="btn btn-outline-primary">
-                <i class="bi bi-pencil"></i> Edit
-            </a>
-        </div>
+            <div class="d-flex gap-2">
+                <a asp-page-handler="ExportYolo" asp-route-id="@Model.Project.Id" class="btn btn-outline-success">
+                    <i class="bi bi-download"></i> Export YOLO
+                </a>
+                <a asp-page="/Manager/Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                <a asp-page="/Manager/EditProject" asp-route-id="@Model.Project.Id" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+            </div>
     </div>
 </div>
 
@@ -58,8 +61,14 @@
 
         <ul class="nav nav-pills gap-2 mb-0" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="labels-tab" data-bs-toggle="tab" data-bs-target="#labels"
-                        type="button" role="tab" aria-controls="labels" aria-selected="true">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard"
+                        type="button" role="tab" aria-controls="dashboard" aria-selected="true">
+                    <i class="bi bi-graph-up"></i> Dashboard
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="labels-tab" data-bs-toggle="tab" data-bs-target="#labels"
+                        type="button" role="tab" aria-controls="labels" aria-selected="false">
                     <i class="bi bi-tags"></i> Labels
                 </button>
             </li>
@@ -75,7 +84,63 @@
     <div class="dash-card-b">
         <div class="tab-content" id="myTabContent">
 
-            <div class="tab-pane fade show active" id="labels" role="tabpanel" aria-labelledby="labels-tab">
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded h-100 shadow-sm bg-white text-center">
+                            <div class="text-muted small mb-2 text-uppercase fw-bold">Project Completion</div>
+                            <div class="display-5 fw-bold text-success">
+                                @(Model.Stats?.TotalImages > 0 ? (int)Math.Round((double)Model.Stats.ApprovedImages / Model.Stats.TotalImages * 100) : 0)%
+                            </div>
+                            <div class="text-muted">@Model.Stats?.ApprovedImages / @Model.Stats?.TotalImages images approved</div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="p-3 border rounded h-100 shadow-sm bg-white">
+                            <div class="fw-semibold mb-3">Status Breakdown</div>
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <div class="h4 mb-0 text-success">@Model.Stats?.ApprovedImages</div>
+                                    <div class="small text-muted">Approved</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 mb-0 text-warning">@Model.Stats?.PendingImages</div>
+                                    <div class="small text-muted">Pending</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 mb-0 text-danger">@Model.Stats?.RejectedImages</div>
+                                    <div class="small text-muted">Rejected</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 mb-0 text-secondary">@Model.Stats?.UnassignedImages</div>
+                                    <div class="small text-muted">Untouched</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded shadow-sm bg-white">
+                            <div class="fw-semibold mb-3"><i class="bi bi-pie-chart me-2"></i>Label Distribution</div>
+                            <div style="height: 300px;">
+                                <canvas id="labelChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded shadow-sm bg-white">
+                            <div class="fw-semibold mb-3"><i class="bi bi-activity me-2"></i>Daily Throughput (Approved)</div>
+                            <div style="height: 300px;">
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="labels" role="tabpanel" aria-labelledby="labels-tab">
                 <div class="row g-3">
                     <div asp-validation-summary="All" class="text-danger mb-2"></div>
                     <div class="col-12 col-lg-4">
@@ -179,20 +244,28 @@
                         <div class="fw-semibold">
                             <i class="bi bi-cloud-upload me-1"></i> Upload dataset images
                         </div>
-                        <small class="text-muted">Multiple files supported</small>
-                    </div>
-
-                    <form method="post" enctype="multipart/form-data" asp-page-handler="UploadImages">
-                        <input type="hidden" name="id" value="@Model.Project.Id" />
-
-                        <div class="input-group">
-                            <input type="file" asp-for="UploadFiles" class="form-control" multiple accept="image/*" />
-                            <button class="btn btn-success" type="submit">
-                                <i class="bi bi-upload"></i> Upload
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('fileInput').click();">
+                                <i class="bi bi-file-earmark-image"></i> Select Files
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="document.getElementById('folderInput').click();">
+                                <i class="bi bi-folder2-open"></i> Select Folder
                             </button>
                         </div>
+                    </div>
 
-                        <small class="text-muted fst-italic">Supported: .jpg, .jpeg, .png</small>
+                    <form method="post" enctype="multipart/form-data" asp-page-handler="UploadImages" id="uploadForm">
+                        <input type="hidden" name="id" value="@Model.Project.Id" />
+                        
+                        <!-- Hidden inputs for file/folder selection -->
+                        <input type="file" asp-for="UploadFiles" id="fileInput" class="d-none" multiple accept="image/*" onchange="this.form.submit();" />
+                        <input type="file" name="UploadFiles" id="folderInput" class="d-none" webkitdirectory mozdirectory msdirectory odirectory directory onchange="this.form.submit();" />
+
+                        <div class="text-center p-4 border-2 border-dashed rounded-3 bg-light mt-2" style="border-style: dashed !important;">
+                            <i class="bi bi-images display-4 text-muted"></i>
+                            <p class="mt-2 mb-0 text-muted">Select files or a folder to upload images to this project</p>
+                            <small class="text-muted fst-italic">Supported: .jpg, .jpeg, .png</small>
+                        </div>
                     </form>
                 </div>
 
@@ -236,6 +309,7 @@
                 </div>
 
             </div>
+
             <hr class="my-5" />
 
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -278,19 +352,21 @@
                                                     int approved = task.ApprovedCount;
                                                     int rejected = task.RejectedCount;
                                                     
-                                                    // Pending: Đã làm (Submitted) nhưng chưa duyệt
+                                                    // Pending: Done (Submitted) but not yet reviewed. 
+                                                     // Note: task.SubmittedCount can be the total number of submissions, so use task.ImageCount for precise % calculation.
                                                     int pending = task.SubmittedCount - approved - rejected; 
                                                     if(pending < 0) pending = 0; 
+                                                    if(pending + approved + rejected > total) pending = total - approved - rejected;
 
-                                                    int approvedPct = total > 0 ? (int)Math.Round((double)approved / total * 100) : 0;
-                                                    int rejectedPct = total > 0 ? (int)Math.Round((double)rejected / total * 100) : 0;
-                                                    int pendingPct = total > 0 ? (int)Math.Round((double)pending / total * 100) : 0;
+                                                    int approvedPct = total > 0 ? (int)Math.Min(100, Math.Round((double)approved / total * 100)) : 0;
+                                                    int rejectedPct = total > 0 ? (int)Math.Min(100 - approvedPct, Math.Round((double)rejected / total * 100)) : 0;
+                                                    int pendingPct = total > 0 ? (int)Math.Min(100 - approvedPct - rejectedPct, Math.Round((double)pending / total * 100)) : 0;
                                                     
                                                     int totalProgressPct = approvedPct + rejectedPct + pendingPct;
                                                 }
                                                 
                                                 <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 12px;">
-                                                    <span class="text-muted">@task.SubmittedCount / @total Done</span>
+                                                    <span class="text-muted">@(approved + rejected + pending) / @total Done</span>
                                                     <span class="fw-bold text-dark">@(totalProgressPct)%</span>
                                                 </div>
                                                 
@@ -313,7 +389,9 @@
                                                 <span class="badge @badgeClass">@task.Status</span>
                                             </td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-secondary">View Details</button>
+                                                <a asp-page="/Manager/TaskDetails" asp-route-id="@task.TaskId" class="btn btn-sm btn-outline-primary shadow-sm">
+                                                    <i class="bi bi-eye"></i> View Details
+                                                </a>
                                             </td>
                                         </tr>
                                     }
@@ -447,7 +525,59 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Data from Model
+        const labelData = @Html.Raw(JsonSerializer.Serialize(Model.Stats?.LabelDistribution ?? new()));
+        const progressData = @Html.Raw(JsonSerializer.Serialize(Model.Stats?.DailyProgress ?? new()));
+
+        // Label Distribution Chart
+        const ctxLabel = document.getElementById('labelChart');
+        if (ctxLabel) {
+            new Chart(ctxLabel, {
+                type: 'doughnut',
+                data: {
+                    labels: labelData.map(x => x.LabelName),
+                    datasets: [{
+                        data: labelData.map(x => x.Count),
+                        backgroundColor: labelData.map(x => x.Color || '#cccccc'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // Progress Chart
+        const ctxProgress = document.getElementById('progressChart');
+        if (ctxProgress) {
+            new Chart(ctxProgress, {
+                type: 'line',
+                data: {
+                    labels: progressData.map(x => new Date(x.Date).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Approved Items',
+                        data: progressData.map(x => x.Count),
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+        }
+
         function setEditData(id, name, color) {
             document.getElementById('editLabelId').value = id;
             document.getElementById('editLabelName').value = name;
