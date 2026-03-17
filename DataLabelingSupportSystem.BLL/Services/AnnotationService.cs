@@ -1,4 +1,4 @@
-﻿using DataLabelingSupportSystem.BLL.DTO;
+using DataLabelingSupportSystem.BLL.DTO;
 using DataLabelingSupportSystem.BLL.Interface;
 using DataLabelingSupportSystem.DAL.DbContext;
 using DataLabelingSupportSystem.DAL.Models;
@@ -174,6 +174,7 @@ namespace DataLabelingSupportSystem.BLL.Services
                     DataItemId = taskItem.DataItemId,
                     ImagePath = taskItem.DataItem.ImagePath
                 },
+                TaskId = taskItem.TaskId,
                 SubmissionId = display?.DataItemSubmissionId ?? 0,
                 SubmissionStatus = display?.Status.ToString(),
                 SubmittedAt = display?.SubmittedAt,
@@ -600,15 +601,52 @@ namespace DataLabelingSupportSystem.BLL.Services
             var current = await _db.DataItemSubmissions
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.DataItemSubmissionId == currentSubmissionId);
+            
             if (current == null) return null;
+
+            // Define the same sorting logic as GetReviewQueueAsync
+            // Order: Status (Submitted=0, InReview=1), then SubmittedAt DESC, then ID DESC
+            // We only care about Pending (Submitted/InReview) items for the continuous flow
             var next = await _db.DataItemSubmissions
                 .AsNoTracking()
-                .Where(s => s.DataItemSubmissionId > currentSubmissionId 
+                .Where(s => s.DataItemSubmissionId != currentSubmissionId 
                             && (s.Status == SubmissionStatus.Submitted || s.Status == SubmissionStatus.InReview))
-                .OrderBy(s => s.DataItemSubmissionId)
-                .Select(s => (int?)s.DataItemSubmissionId)
-                .FirstOrDefaultAsync();
-            return next;
+                .OrderBy(s => s.Status == SubmissionStatus.Submitted ? 0 : 1)
+                .ThenByDescending(s => s.SubmittedAt)
+                .ThenByDescending(s => s.DataItemSubmissionId)
+                .ToListAsync();
+
+            // Find the item immediately after 'current' in this sorted list
+            bool foundCurrent = false;
+            foreach (var item in next)
+            {
+                // Note: This is an in-memory check after fetching pending items. 
+                // Usually pending items are few, so this is safe.
+                
+                // We need to determine if 'item' comes after 'current' in the sort.
+                // Status check
+                int curStatus = current.Status == SubmissionStatus.Submitted ? 0 : 1;
+                int itemStatus = item.Status == SubmissionStatus.Submitted ? 0 : 1;
+
+                if (itemStatus > curStatus)
+                {
+                    return item.DataItemSubmissionId;
+                }
+                
+                if (itemStatus == curStatus)
+                {
+                    if (item.SubmittedAt < current.SubmittedAt)
+                    {
+                        return item.DataItemSubmissionId;
+                    }
+                    if (item.SubmittedAt == current.SubmittedAt && item.DataItemSubmissionId < current.DataItemSubmissionId)
+                    {
+                        return item.DataItemSubmissionId;
+                    }
+                }
+            }
+
+            return null;
         }
     }
 }

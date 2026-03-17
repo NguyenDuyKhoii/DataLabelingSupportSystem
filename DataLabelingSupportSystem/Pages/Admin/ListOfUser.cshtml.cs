@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using DataLabelingSupportSystem.BLL.Interface;
@@ -11,16 +11,19 @@ namespace DataLabelingSupportSystem.UI.Pages.Admin
     public class ListOfUserModel : PageModel
     {
         private readonly IUserService _userService;
+        private readonly IAdminService _adminService;
         private readonly AppDbContext _db;
 
-        public ListOfUserModel(IUserService userService, AppDbContext db)
+        public ListOfUserModel(IUserService userService, AppDbContext db, IAdminService adminService)
         {
             _userService = userService;
             _db = db;
+            _adminService = adminService;
         }
 
         public List<UserDto> Users { get; set; } = new();
         public SelectList? RoleList { get; set; }
+        public BLL.DTO.SystemStatsDto Stats { get; private set; } = new();
 
         [BindProperty(SupportsGet = true)]
         public string? Search { get; set; }
@@ -190,6 +193,9 @@ namespace DataLabelingSupportSystem.UI.Pages.Admin
 
         private async Task LoadDataAsync()
         {
+            // Load Statistics
+            Stats = await _adminService.GetSystemOverviewAsync();
+
             var allUsers = await _userService.GetUsersAsync(null, null, null);
 
             IEnumerable<UserDto> query = allUsers;

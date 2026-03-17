@@ -75,6 +75,12 @@
 
                         <hr />
 
+                        <div class="alert alert-info py-2 mb-3 shadow-sm border-0" style="font-size: 12px; background: #eef2ff; color: #4338ca;">
+                            <i class="bi bi-magic me-1"></i> <strong>Continuous Mode</strong>: Jumping to next image after decision.
+                        </div>
+
+                        <hr />
+
                         @if (d.Boxes.Count > 0)
                         {
                             <h6 class="mb-2">Labels</h6>
@@ -137,29 +143,64 @@
 
 <!-- Modal comment -->
 <div class="modal fade" id="decisionModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="decisionTitle">Decision</h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="decisionTitle" style="color: #0f172a;">Decision</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body py-4">
                 <input type="hidden" id="modalAction" />
 
-                <div class="mb-2">
-                    <label class="form-label">Comment (optional)</label>
-                    <textarea class="form-control" id="modalComment" rows="4" placeholder="Write a short note..."></textarea>
+                <div id="modalIconContainer" class="d-flex align-items-center mb-3">
+                    <div id="modalIconBg" class="p-3 rounded-circle me-3">
+                        <i id="modalIcon" class="bi fs-3"></i>
+                    </div>
+                    <div>
+                        <p id="modalMainText" class="mb-0 fw-semibold text-dark">Processing Decision...</p>
+                        <p id="modalSubText" class="text-muted small mb-0">Please provide a reason if necessary.</p>
+                    </div>
                 </div>
 
-                <div class="alert alert-danger d-none" id="modalError"></div>
+                <div class="mb-2">
+                    <label class="form-label fw-bold small text-muted">Comment (optional)</label>
+                    <textarea class="form-control border-0 bg-light p-3" id="modalComment" rows="3" placeholder="Write a short note..." style="border-radius: 12px;"></textarea>
+                </div>
+
+                <div class="alert alert-danger d-none mt-3" id="modalError"></div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" id="modalConfirmBtn">Confirm</button>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal" style="border-radius: 12px;">Cancel</button>
+                <button type="button" class="btn px-4 fw-bold shadow-sm" id="modalConfirmBtn" style="border-radius: 12px;">Confirm</button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Toast Container for Feedback -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2000;">
+    <div id="feedbackToast" class="toast align-items-center border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 15px;">
+        <div class="d-flex p-2">
+            <div class="toast-body d-flex align-items-center gap-3">
+                <div id="toastIconContainer" class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i id="toastIcon" class="bi fs-5 text-white"></i>
+                </div>
+                <div>
+                    <strong id="toastTitle" class="d-block text-dark small fw-bold">Success</strong>
+                    <span id="toastMessage" class="text-muted small">Action completed.</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-success-soft { background: rgba(25, 135, 84, 0.1); }
+    .bg-danger-soft { background: rgba(220, 53, 69, 0.1); }
+    .bg-warning-soft { background: rgba(255, 193, 7, 0.1); }
+    #overlay div { transition: all 0.2s ease-in-out; }
+</style>
 
 @section Scripts {
     <script>
@@ -299,12 +340,11 @@
             const btnApprove = document.getElementById('btnApprove');
             if (btnApprove) {
                 btnApprove.addEventListener('click', () => {
-                    titleEl.textContent = 'Approve submission';
+                    titleEl.textContent = 'Final Approval';
                     actionEl.value = 'Approve';
                     commentEl.value = '';
                     clearModalError();
-                    confirmBtn.className = 'btn btn-success btn-sm';
-                    confirmBtn.textContent = 'Approve';
+                    setupModalUI('Approve');
                     modal.show();
                 });
             }
@@ -312,12 +352,11 @@
             const btnReject = document.getElementById('btnReject');
             if (btnReject) {
                 btnReject.addEventListener('click', () => {
-                    titleEl.textContent = 'Reject submission';
+                    titleEl.textContent = 'Rejection Details';
                     actionEl.value = 'Reject';
                     commentEl.value = '';
                     clearModalError();
-                    confirmBtn.className = 'btn btn-danger btn-sm';
-                    confirmBtn.textContent = 'Reject';
+                    setupModalUI('Reject');
                     modal.show();
                 });
             }
@@ -332,26 +371,89 @@
                     fd.append('submissionId', submissionId);
                     fd.append('comment', comment);
 
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
                     if (action === 'Approve') {
                         const data = await postHandler('Approve', fd);
-                        if (data.nextSubmissionId) {
-                            window.location.href = `/Reviewer/Review/${data.nextSubmissionId}`;
-                        } else {
-                            window.location.reload();
-                        }
+                        handleNextRedirect(data, 'Approved');
                     }
                     if (action === 'Reject') {
                         const data = await postHandler('Reject', fd);
-                        if (data.nextSubmissionId) {
-                            window.location.href = `/Reviewer/Review/${data.nextSubmissionId}`;
-                        } else {
-                            window.location.reload();
-                        }
+                        handleNextRedirect(data, 'Rejected');
                     }
                 } catch (err) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = actionEl.value;
                     showModalError(err.message || err);
                 }
             });
+
+            function handleNextRedirect(data, status) {
+                modal.hide();
+                showToast(status, data.nextSubmissionId ? 'Moving to next image...' : 'All tasks completed.', 'success');
+                
+                setTimeout(() => {
+                    if (data.nextSubmissionId) {
+                        window.location.href = `/Reviewer/Review/${data.nextSubmissionId}`;
+                    } else {
+                        window.location.href = '/Reviewer/Index';
+                    }
+                }, 600);
+            }
+
+            // ========= TOAST HELPER =========
+            const toastEl = document.getElementById('feedbackToast');
+            const bsToast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            
+            function showToast(title, message, type = 'success') {
+                const titleEl = document.getElementById('toastTitle');
+                const messageEl = document.getElementById('toastMessage');
+                const iconContainer = document.getElementById('toastIconContainer');
+                const icon = document.getElementById('toastIcon');
+
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+                iconContainer.className = 'rounded-circle d-flex align-items-center justify-content-center';
+                icon.className = 'bi fs-5 text-white';
+
+                if (type === 'success') {
+                    iconContainer.classList.add('bg-success');
+                    icon.classList.add('bi-check-lg');
+                    toastEl.style.borderLeft = '5px solid #198754';
+                } else if (type === 'danger') {
+                    iconContainer.classList.add('bg-danger');
+                    icon.classList.add('bi-exclamation-circle');
+                    toastEl.style.borderLeft = '5px solid #dc3545';
+                }
+                bsToast.show();
+            }
+
+            function setupModalUI(action) {
+                const bg = document.getElementById('modalIconBg');
+                const icon = document.getElementById('modalIcon');
+                const mainText = document.getElementById('modalMainText');
+                const subText = document.getElementById('modalSubText');
+
+                bg.className = 'p-3 rounded-circle me-3';
+                icon.className = 'bi fs-3';
+
+                if (action === 'Approve') {
+                    bg.classList.add('bg-success-soft');
+                    icon.classList.add('bi-check-circle-fill', 'text-success');
+                    mainText.textContent = 'Approve Submission?';
+                    subText.textContent = 'This will mark the work as verified and final.';
+                    confirmBtn.className = 'btn btn-success px-4 fw-bold shadow-sm';
+                    confirmBtn.textContent = 'Approve Now';
+                } else {
+                    bg.classList.add('bg-danger-soft');
+                    icon.classList.add('bi-x-circle-fill', 'text-danger');
+                    mainText.textContent = 'Reject Submission?';
+                    subText.textContent = 'The annotator will need to re-work these boxes.';
+                    confirmBtn.className = 'btn btn-danger px-4 fw-bold shadow-sm';
+                    confirmBtn.textContent = 'Reject Now';
+                }
+            }
 
         })();
     </script>

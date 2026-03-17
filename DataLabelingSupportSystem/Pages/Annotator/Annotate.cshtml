@@ -11,7 +11,7 @@
     </div>
 
     <div class="d-flex gap-2">
-        <a asp-page="/Annotator/TaskDetails" asp-route-id="@Model.Vm.Item.TaskItemId" class="btn btn-outline-secondary btn-sm shadow-sm">
+        <a asp-page="/Annotator/TaskDetails" asp-route-id="@Model.Vm.TaskId" class="btn btn-outline-secondary btn-sm shadow-sm">
             <i class="bi bi-arrow-left"></i> Back to Task
         </a>
     </div>
@@ -183,6 +183,57 @@
         </div>
     </div>
 </div>
+
+<!-- Submit Confirmation Modal -->
+<div class="modal fade" id="submitModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" style="color: #0f172a;">Confirm Submission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success-soft p-3 rounded-circle me-3">
+                        <i class="bi bi-send-check-fill text-success fs-3"></i>
+                    </div>
+                    <div>
+                        <p class="mb-0 fw-semibold text-dark">Are you ready to submit?</p>
+                        <p class="text-muted small mb-0">Submitting will mark these annotations as final and move them to review.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal" style="border-radius: 12px;">Cancel</button>
+                <button type="button" id="confirmSubmitBtn" class="btn btn-success px-4 fw-bold shadow-sm" style="border-radius: 12px;">Yes, Submit Now</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container for Feedback -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2000;">
+    <div id="feedbackToast" class="toast align-items-center border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 15px;">
+        <div class="d-flex p-2">
+            <div class="toast-body d-flex align-items-center gap-3">
+                <div id="toastIconContainer" class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i id="toastIcon" class="bi fs-5 text-white"></i>
+                </div>
+                <div>
+                    <strong id="toastTitle" class="d-block text-dark small fw-bold">Success</strong>
+                    <span id="toastMessage" class="text-muted small">Your changes have been saved.</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-success-soft { background: rgba(25, 135, 84, 0.1); }
+    .bg-info-soft { background: rgba(13, 202, 240, 0.1); }
+    .bg-danger-soft { background: rgba(220, 53, 69, 0.1); }
+</style>
 
 @section Scripts {
     <script>
@@ -466,13 +517,13 @@
 
                     const data = await res.json().catch(() => ({}));
                     if (!res.ok || !data.ok) {
-                        alert(data.error || ('Save failed. HTTP ' + res.status));
+                        showToast('Error', data.error || ('Save failed. HTTP ' + res.status), 'danger');
                         return;
                     }
 
-                    alert('Saved! submissionId = ' + data.submissionId);
+                    showToast('Saved', 'Annotations recorded successfully.', 'success');
                 } catch (e) {
-                    alert('Error: ' + e);
+                    showToast('System Error', e, 'danger');
                 }
             });
 
@@ -484,10 +535,22 @@
             });
 
             // ========= SUBMIT =========
-            btnSubmit?.addEventListener('click', async function () {
-                if (!canEdit) return;
+            // ========= NEW SUBMIT WITH MODAL =========
+            const submitModal = new bootstrap.Modal(document.getElementById('submitModal'));
+            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
 
-                if (!confirm("Submitting will mark it as final. Do you want to submit?")) return;
+            btnSubmit?.addEventListener('click', () => {
+                if (!canEdit) return;
+                if (boxes.length === 0) {
+                    showToast('Info', 'Add at least one annotation before submitting.', 'info');
+                    return;
+                }
+                submitModal.show();
+            });
+
+            confirmSubmitBtn?.addEventListener('click', async function () {
+                submitModal.hide();
+                showToast('Submitting', 'Please wait...', 'info');
 
                 try {
                     const res = await fetch(`?handler=Submit`, {
@@ -497,20 +560,56 @@
 
                     const data = await res.json().catch(() => ({}));
                     if (!res.ok || !data.ok) {
-                        alert(data.error || ('Submit failed. HTTP ' + res.status));
+                        showToast('Submit Failed', data.error || ('HTTP ' + res.status), 'danger');
                         return;
                     }
 
-                    alert("Submitted!");
-                    if (data.nextTaskItemId) {
-                        window.location.href = `/Annotator/Annotate/${data.nextTaskItemId}`;
-                    } else {
-                        location.reload(); 
-                    }
+                    showToast('Completed', 'Moving to next task...', 'success');
+                    setTimeout(() => {
+                        if (data.nextTaskItemId) {
+                            window.location.href = `/Annotator/Annotate/${data.nextTaskItemId}`;
+                        } else {
+                            location.reload(); 
+                        }
+                    }, 500);
                 } catch (e) {
-                    alert('Error: ' + e);
+                    showToast('Error', e, 'danger');
                 }
             });
+
+            // ========= TOAST HELPER =========
+            const toastEl = document.getElementById('feedbackToast');
+            const bsToast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            
+            function showToast(title, message, type = 'success') {
+                const titleEl = document.getElementById('toastTitle');
+                const messageEl = document.getElementById('toastMessage');
+                const iconContainer = document.getElementById('toastIconContainer');
+                const icon = document.getElementById('toastIcon');
+
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+
+                // Reset classes
+                iconContainer.className = 'rounded-circle d-flex align-items-center justify-content-center';
+                icon.className = 'bi fs-5 text-white';
+
+                if (type === 'success') {
+                    iconContainer.classList.add('bg-success');
+                    icon.classList.add('bi-check-lg');
+                    toastEl.style.borderLeft = '5px solid #198754';
+                } else if (type === 'danger') {
+                    iconContainer.classList.add('bg-danger');
+                    icon.classList.add('bi-exclamation-circle');
+                    toastEl.style.borderLeft = '5px solid #dc3545';
+                } else if (type === 'info') {
+                    iconContainer.classList.add('bg-info');
+                    icon.classList.add('bi-info-circle');
+                    toastEl.style.borderLeft = '5px solid #0dcaf0';
+                }
+
+                bsToast.show();
+            }
 
             // init
             renderOverlay();

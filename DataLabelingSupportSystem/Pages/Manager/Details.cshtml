@@ -5,52 +5,58 @@
     ViewData["Title"] = "Project Details: " + Model.Project.Name;
 }
 
-<div class="dash-card mb-3">
-    <div class="dash-card-h d-flex justify-content-between align-items-center">
+<div class="dash-card mb-4">
+    <div class="dash-card-h d-flex justify-content-between align-items-center py-3">
         <div>
-            <div class="fw-semibold" style="font-size:18px;">@Model.Project.Name</div>
-            <div class="text-muted" style="font-size:13px;">@Model.Project.Description</div>
+            <div class="fs-4 fw-bold" style="color: #0b3b6d; letter-spacing: -0.5px;">@Model.Project.Name</div>
+            <div class="text-muted" style="font-size:14px;">@Model.Project.Description</div>
         </div>
 
-            <div class="d-flex gap-2">
-                <a asp-page-handler="ExportYolo" asp-route-id="@Model.Project.Id" class="btn btn-outline-success">
-                    <i class="bi bi-download"></i> Export YOLO
-                </a>
-                <a asp-page="/Manager/Index" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Back
-                </a>
-                <a asp-page="/Manager/EditProject" asp-route-id="@Model.Project.Id" class="btn btn-outline-primary">
-                    <i class="bi bi-pencil"></i> Edit
-                </a>
-            </div>
+        <div class="d-flex gap-2">
+            <a asp-page-handler="ExportYolo" asp-route-id="@Model.Project.Id" class="btn btn-action btn-outline-success">
+                <i class="bi bi-download"></i> Export YOLO
+            </a>
+            <a asp-page="/Manager/Index" class="btn btn-action btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <a asp-page="/Manager/EditProject" asp-route-id="@Model.Project.Id" class="btn btn-action btn-outline-primary">
+                <i class="bi bi-pencil-square"></i> Edit
+            </a>
+        </div>
     </div>
 </div>
 
-<div class="dash-card mb-3">
-    <div class="dash-card-b d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div class="d-flex align-items-center gap-2">
-            <span class="text-muted" style="font-size:12px;">Status</span>
+<div class="dash-card mb-4">
+    <div class="dash-card-b d-flex flex-wrap align-items-center justify-content-between py-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-muted fw-bold text-uppercase small" style="letter-spacing: 1px;">Status</span>
             @if (Model.Project.Status == "New")
             {
-                <span class="badge bg-primary">New</span>
+                <span class="badge badge-soft-primary">New</span>
             }
             else if (Model.Project.Status == "InProgress")
             {
-                <span class="badge bg-warning text-dark">In Progress</span>
+                <span class="badge badge-soft-warning">In Progress</span>
             }
             else
             {
-                <span class="badge bg-success">Completed</span>
+                <span class="badge badge-soft-success">Completed</span>
             }
         </div>
 
-        <div class="text-muted" style="font-size:12px;">
-            <i class="bi bi-calendar3 me-1"></i>
-            Created: <span class="fw-semibold text-dark">@Model.Project.CreatedDate.ToString("dd/MM/yyyy")</span>
-            <span class="mx-2">•</span>
-            Labels: <span class="fw-semibold text-dark">@Model.Labels.Count</span>
-            <span class="mx-2">•</span>
-            Images: <span class="fw-semibold text-dark">@Model.ImageUrls.Count</span>
+        <div class="text-muted d-flex align-items-center gap-4" style="font-size:13px;">
+            <div>
+                <i class="bi bi-calendar3 me-1 text-primary"></i>
+                Created: <span class="fw-bold text-dark">@Model.Project.CreatedDate.ToString("dd/MM/yyyy")</span>
+            </div>
+            <div>
+                <i class="bi bi-tags-fill me-1 text-indigo"></i>
+                Labels: <span class="fw-bold text-dark">@Model.Labels.Count</span>
+            </div>
+            <div>
+                <i class="bi bi-images me-1 text-success"></i>
+                Images: <span class="fw-bold text-dark">@Model.ImageUrls.Count</span>
+            </div>
         </div>
     </div>
 </div>
@@ -85,55 +91,79 @@
         <div class="tab-content" id="myTabContent">
 
             <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="p-3 border rounded h-100 shadow-sm bg-white text-center">
-                            <div class="text-muted small mb-2 text-uppercase fw-bold">Project Completion</div>
-                            <div class="display-5 fw-bold text-success">
+                <div class="row g-4">
+                    <div class="col-md-5">
+                        <div class="stat-card stat-card-indigo text-center">
+                            <div class="stat-title">Project Completion</div>
+                            <div class="stat-value text-success" style="font-size: 42px;">
                                 @(Model.Stats?.TotalImages > 0 ? (int)Math.Round((double)Model.Stats.ApprovedImages / Model.Stats.TotalImages * 100) : 0)%
                             </div>
-                            <div class="text-muted">@Model.Stats?.ApprovedImages / @Model.Stats?.TotalImages images approved</div>
+                            <div class="stat-meta">@Model.Stats?.ApprovedImages / @Model.Stats?.TotalImages images approved</div>
+                            <div class="progress mt-3" style="height: 8px; border-radius: 4px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: @(Model.Stats?.TotalImages > 0 ? (int)Math.Round((double)Model.Stats.ApprovedImages / Model.Stats.TotalImages * 100) : 0)%"></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-8">
-                        <div class="p-3 border rounded h-100 shadow-sm bg-white">
-                            <div class="fw-semibold mb-3">Status Breakdown</div>
-                            <div class="row text-center">
+                    <div class="col-md-7">
+                        <div class="stat-card">
+                            <div class="stat-title mb-3">Status Breakdown</div>
+                            <div class="row text-center mt-2">
                                 <div class="col-3">
-                                    <div class="h4 mb-0 text-success">@Model.Stats?.ApprovedImages</div>
-                                    <div class="small text-muted">Approved</div>
+                                    <div class="stat-icon mx-auto bg-success-soft" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                                        <i class="bi bi-check-circle"></i>
+                                    </div>
+                                    <div class="h4 fw-bold mb-0 text-success">@Model.Stats?.ApprovedImages</div>
+                                    <div class="stat-meta">Approved</div>
                                 </div>
                                 <div class="col-3">
-                                    <div class="h4 mb-0 text-warning">@Model.Stats?.PendingImages</div>
-                                    <div class="small text-muted">Pending</div>
+                                    <div class="stat-icon mx-auto" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                                        <i class="bi bi-clock-history"></i>
+                                    </div>
+                                    <div class="h4 fw-bold mb-0 text-warning">@Model.Stats?.PendingImages</div>
+                                    <div class="stat-meta">Pending</div>
                                 </div>
                                 <div class="col-3">
-                                    <div class="h4 mb-0 text-danger">@Model.Stats?.RejectedImages</div>
-                                    <div class="small text-muted">Rejected</div>
+                                    <div class="stat-icon mx-auto" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                                        <i class="bi bi-x-circle"></i>
+                                    </div>
+                                    <div class="h4 fw-bold mb-0 text-danger">@Model.Stats?.RejectedImages</div>
+                                    <div class="stat-meta">Rejected</div>
                                 </div>
                                 <div class="col-3">
-                                    <div class="h4 mb-0 text-secondary">@Model.Stats?.UnassignedImages</div>
-                                    <div class="small text-muted">Untouched</div>
+                                    <div class="stat-icon mx-auto" style="background: rgba(100, 116, 139, 0.1); color: #64748b;">
+                                        <i class="bi bi-slash-circle"></i>
+                                    </div>
+                                    <div class="h4 fw-bold mb-0 text-secondary">@Model.Stats?.UnassignedImages</div>
+                                    <div class="stat-meta">Untouched</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="row g-3 mt-2">
+                <div class="row g-4 mt-1">
                     <div class="col-md-6">
-                        <div class="p-3 border rounded shadow-sm bg-white">
-                            <div class="fw-semibold mb-3"><i class="bi bi-pie-chart me-2"></i>Label Distribution</div>
-                            <div style="height: 300px;">
-                                <canvas id="labelChart"></canvas>
+                        <div class="dash-section shadow-sm">
+                            <div class="dash-section-h" style="background: #f8fafc;">
+                                <span><i class="bi bi-pie-chart-fill me-2 text-indigo"></i>Label Distribution</span>
+                            </div>
+                            <div class="dash-section-b">
+                                <div style="height: 300px;">
+                                    <canvas id="labelChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="p-3 border rounded shadow-sm bg-white">
-                            <div class="fw-semibold mb-3"><i class="bi bi-activity me-2"></i>Daily Throughput (Approved)</div>
-                            <div style="height: 300px;">
-                                <canvas id="progressChart"></canvas>
+                        <div class="dash-section shadow-sm">
+                            <div class="dash-section-h" style="background: #f8fafc;">
+                                <span><i class="bi bi-activity me-2 text-primary"></i>Daily Throughput (Approved)</span>
+                            </div>
+                            <div class="dash-section-b">
+                                <div style="height: 300px;">
+                                    <canvas id="progressChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -141,195 +171,211 @@
             </div>
 
             <div class="tab-pane fade" id="labels" role="tabpanel" aria-labelledby="labels-tab">
-                <div class="row g-3">
+                <div class="row g-4">
                     <div asp-validation-summary="All" class="text-danger mb-2"></div>
                     <div class="col-12 col-lg-4">
-                        <div class="p-3" style="background:#fff;border:1px solid var(--dash-border);border-radius:18px;">
-                            <div class="fw-semibold mb-3">Add new label</div>
+                        <div class="dash-section shadow-sm">
+                            <div class="dash-section-h" style="background: #f8fafc;">
+                                <span><i class="bi bi-plus-circle-fill me-2 text-primary"></i>Add New Label</span>
+                            </div>
+                            <div class="dash-section-b">
+                                <form asp-page-handler="AddLabel" method="post">
+                                    <input type="hidden" name="id" value="@Model.Project.Id" />
 
-                            <form asp-page-handler="AddLabel" method="post">
-                                <input type="hidden" name="id" value="@Model.Project.Id" />
-
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Label name</label>
-                                    <input asp-for="NewLabel.Name" class="form-control" placeholder="e.g. Dog..." />
-                                    <span asp-validation-for="NewLabel.Name" class="text-danger"></span>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Display color</label>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <input type="color" asp-for="NewLabel.Color" class="form-control form-control-color" title="Choose color" />
-                                        <small class="text-muted">Choose a color</small>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small text-uppercase" style="color: #64748b;">Label Name</label>
+                                        <input asp-for="NewLabel.Name" class="form-control px-3" placeholder="e.g. Car, Person..." style="border-radius: 10px;" />
+                                        <span asp-validation-for="NewLabel.Name" class="text-danger"></span>
                                     </div>
-                                </div>
 
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="bi bi-check2-circle"></i> Save label
-                                </button>
-                            </form>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small text-uppercase" style="color: #64748b;">Display Color</label>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <input type="color" asp-for="NewLabel.Color" class="form-control form-control-color" style="width: 50px; height: 50px; border-radius: 10px;" title="Choose color" />
+                                            <div class="text-muted small">Choose a recognizable color for this label.</div>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="border-radius: 10px;">
+                                        <i class="bi bi-plus-lg me-1"></i> Save Label
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
 
                     <div class="col-12 col-lg-8">
-                        <div style="background:#fff;border:1px solid var(--dash-border);border-radius:18px;overflow:hidden;">
-                            <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2"
-                                 style="border-bottom:1px solid var(--dash-border);">
-                                <div class="fw-semibold">Current labels</div>
-                                <div class="text-muted" style="font-size:12px;">@Model.Labels.Count items</div>
+                        <div class="dash-section shadow-sm overflow-hidden">
+                            <div class="dash-section-h d-flex justify-content-between align-items-center" style="background: #f8fafc;">
+                                <span><i class="bi bi-list-ul me-2 text-indigo"></i>Current Labels</span>
+                                <span class="badge bg-light text-dark fw-normal border">@Model.Labels.Count items</span>
                             </div>
 
-                            @if (Model.Labels.Count == 0)
-                            {
-                                <div class="text-center text-muted py-5">
-                                    No labels yet. Add your first label on the left!
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="table-responsive">
-                                    <table class="table align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th style="width:60px;"></th>
-                                                <th>Label Name</th>
-                                                <th style="width:160px;">Color</th>
-                                                <th style="width:220px;">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var label in Model.Labels)
-                                            {
+                            <div class="dash-section-b p-0">
+                                @if (Model.Labels.Count == 0)
+                                {
+                                    <div class="text-center text-muted py-5">
+                                        <i class="bi bi-tag display-4 d-block mb-3 opacity-25"></i>
+                                        No labels yet. Add your first label on the left!
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table align-middle mb-0">
+                                            <thead>
                                                 <tr>
-                                                    <td>
-                                                        <span class="rounded-circle border d-inline-block"
-                                                              style="width:18px;height:18px;background-color:@label.Color;"></span>
-                                                    </td>
-                                                    <td class="fw-semibold">@label.Name</td>
-                                                    <td class="text-muted">@label.Color</td>
-                                                    <td>
-                                                        <div class="d-flex gap-2">
-                                                            <button type="button" class="btn btn-sm btn-outline-primary"
-                                                                    data-bs-toggle="modal" data-bs-target="#editModal"
-                                                                    onclick='setEditData(@label.Id, @Html.Raw(JsonSerializer.Serialize(label.Name)), @Html.Raw(JsonSerializer.Serialize(label.Color)))'>
-                                                                <i class="bi bi-pencil"></i> Edit
-                                                            </button>
-
-                                                            <form asp-page-handler="DeleteLabel" method="post" class="d-inline"
-                                                                  onsubmit="return confirm('Are you sure you want to delete this label?');">
-                                                                <input type="hidden" name="labelId" value="@label.Id" />
-                                                                <input type="hidden" name="projectId" value="@Model.Project.Id" />
-                                                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                                    <i class="bi bi-trash"></i> Delete
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                    </td>
+                                                    <th style="width:70px;"></th>
+                                                    <th>Label Name</th>
+                                                    <th style="width:160px;">Hex Code</th>
+                                                    <th style="width:200px;" class="text-end px-4">Actions</th>
                                                 </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            }
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var label in Model.Labels)
+                                                {
+                                                    <tr>
+                                                        <td class="text-center">
+                                                            <span class="rounded-pill d-inline-block"
+                                                                  style="width:24px;height:24px;background-color:@label.Color; border: 2px solid #fff; box-shadow: 0 0 0 1px #e2e8f0;"></span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="fw-bold" style="color: @label.Color;">@label.Name</span>
+                                                        </td>
+                                                        <td><code>@label.Color.ToUpper()</code></td>
+                                                        <td class="text-end px-4">
+                                                            <div class="d-flex gap-2 justify-content-end">
+                                                                <button type="button" class="btn btn-action btn-outline-primary"
+                                                                        data-bs-toggle="modal" data-bs-target="#editModal"
+                                                                        onclick='setEditData(@label.Id, @Html.Raw(JsonSerializer.Serialize(label.Name)), @Html.Raw(JsonSerializer.Serialize(label.Color)))'>
+                                                                    <i class="bi bi-pencil-square"></i> Edit
+                                                                </button>
+
+                                                                <form asp-page-handler="DeleteLabel" method="post" class="d-inline"
+                                                                      onsubmit="return confirm('Are you sure you want to delete this label?');">
+                                                                    <input type="hidden" name="labelId" value="@label.Id" />
+                                                                    <input type="hidden" name="projectId" value="@Model.Project.Id" />
+                                                                    <button type="submit" class="btn btn-action btn-outline-danger">
+                                                                        <i class="bi bi-trash3"></i>
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
             <div class="tab-pane fade" id="images" role="tabpanel" aria-labelledby="images-tab">
 
-                <div class="p-3 mb-3" style="background:#fff;border:1px solid var(--dash-border);border-radius:18px;">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="fw-semibold">
-                            <i class="bi bi-cloud-upload me-1"></i> Upload dataset images
-                        </div>
+                <div class="dash-section shadow-sm mb-4">
+                    <div class="dash-section-h d-flex justify-content-between align-items-center" style="background: #f8fafc;">
+                        <span><i class="bi bi-cloud-upload-fill me-2 text-primary"></i>Upload Dataset Images</span>
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('fileInput').click();">
+                            <button type="button" class="btn btn-action btn-outline-primary" onclick="document.getElementById('fileInput').click();">
                                 <i class="bi bi-file-earmark-image"></i> Select Files
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-info" onclick="document.getElementById('folderInput').click();">
+                            <button type="button" class="btn btn-action btn-outline-indigo" onclick="document.getElementById('folderInput').click();" 
+                                    style="border-color: #6366f1; color: #6366f1;">
                                 <i class="bi bi-folder2-open"></i> Select Folder
                             </button>
                         </div>
                     </div>
+                    
+                    <div class="dash-section-b">
+                        <form method="post" enctype="multipart/form-data" asp-page-handler="UploadImages" id="uploadForm">
+                            <input type="hidden" name="id" value="@Model.Project.Id" />
+                            
+                            <!-- Hidden inputs for file/folder selection -->
+                            <input type="file" asp-for="UploadFiles" id="fileInput" class="d-none" multiple accept="image/*" onchange="this.form.submit();" />
+                            <input type="file" name="UploadFiles" id="folderInput" class="d-none" webkitdirectory mozdirectory msdirectory odirectory directory onchange="this.form.submit();" />
 
-                    <form method="post" enctype="multipart/form-data" asp-page-handler="UploadImages" id="uploadForm">
-                        <input type="hidden" name="id" value="@Model.Project.Id" />
-                        
-                        <!-- Hidden inputs for file/folder selection -->
-                        <input type="file" asp-for="UploadFiles" id="fileInput" class="d-none" multiple accept="image/*" onchange="this.form.submit();" />
-                        <input type="file" name="UploadFiles" id="folderInput" class="d-none" webkitdirectory mozdirectory msdirectory odirectory directory onchange="this.form.submit();" />
-
-                        <div class="text-center p-4 border-2 border-dashed rounded-3 bg-light mt-2" style="border-style: dashed !important;">
-                            <i class="bi bi-images display-4 text-muted"></i>
-                            <p class="mt-2 mb-0 text-muted">Select files or a folder to upload images to this project</p>
-                            <small class="text-muted fst-italic">Supported: .jpg, .jpeg, .png</small>
-                        </div>
-                    </form>
+                            <div class="upload-zone text-center p-5" onclick="document.getElementById('fileInput').click();">
+                                <div class="stat-icon mx-auto bg-primary-soft mb-3" style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; width: 64px; height: 64px; font-size: 28px;">
+                                    <i class="bi bi-cloud-arrow-up-fill"></i>
+                                </div>
+                                <h5 class="fw-bold mb-1">Drag and drop images here</h5>
+                                <p class="text-muted mb-0">or click to browse from your computer</p>
+                                <div class="mt-3">
+                                    <span class="badge bg-light text-muted border px-2 py-1">JPG, PNG, JPEG supported</span>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
-                <div class="p-3" style="background:#fff;border:1px solid var(--dash-border);border-radius:18px;">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="fw-semibold">
-                            <i class="bi bi-images me-1"></i> Images in this project
-                        </div>
-                        <small class="text-muted">@Model.ImageUrls.Count items</small>
+                <div class="dash-section shadow-sm">
+                    <div class="dash-section-h d-flex justify-content-between align-items-center" style="background: #f8fafc;">
+                        <span><i class="bi bi-images me-2 text-indigo"></i>Images in this project</span>
+                        <span class="badge bg-light text-dark fw-normal border">@Model.ImageUrls.Count items</span>
                     </div>
 
-                    <div class="row g-3">
-                        @if (Model.ImageUrls != null && Model.ImageUrls.Count > 0)
-                        {
-                            @foreach (var imgUrl in Model.ImageUrls)
+                    <div class="dash-section-b">
+                        <div class="row g-4">
+                            @if (Model.ImageUrls != null && Model.ImageUrls.Count > 0)
                             {
-                                <div class="col-6 col-md-4 col-lg-3">
-                                    <div style="border:1px solid var(--dash-border);border-radius:18px;overflow:hidden;background:#fff;">
-                                        <a href="@imgUrl" target="_blank" class="d-block">
-                                            <img src="@imgUrl" alt="Data Item"
-                                                 style="height:160px;width:100%;object-fit:cover;" />
-                                        </a>
-                                        <div class="p-2 text-center">
-                                            <small class="text-muted">Image Cloud</small>
+                                @foreach (var imgUrl in Model.ImageUrls)
+                                {
+                                    <div class="col-6 col-md-4 col-lg-3">
+                                        <div class="image-card">
+                                            <a href="@imgUrl" target="_blank" class="d-flex align-items-center justify-content-center overflow-hidden bg-light" style="height: 240px;">
+                                                <img src="@imgUrl" alt="Data Item" style="max-height: 100%; width: auto; max-width: 100%;" />
+                                            </a>
+                                            <div class="image-card-footer text-center">
+                                                <small class="text-muted fw-bold d-flex align-items-center justify-content-center gap-1">
+                                                    <i class="bi bi-hdd-network"></i> Cloud Hosted
+                                                </small>
+                                            </div>
                                         </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="col-12">
+                                    <div class="text-center py-5 opacity-50">
+                                        <i class="bi bi-folder-x display-1 d-block mb-3"></i>
+                                        <p class="h5 mb-0">No images uploaded yet</p>
+                                        <p class="small">Upload some images above to get started</p>
                                     </div>
                                 </div>
                             }
-                        }
-                        else
-                        {
-                            <div class="col-12">
-                                <div class="alert alert-secondary text-center py-5 mb-0">
-                                    <div class="display-6">📂</div>
-                                    <p class="text-muted mb-0">No images have been uploaded yet.</p>
-                                    <p class="small mb-0">Choose images above and click Upload.</p>
-                                </div>
-                            </div>
-                        }
+                        </div>
                     </div>
                 </div>
 
-            </div>
+                <hr class="my-5" />
 
-            <hr class="my-5" />
-
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5>📋 Tasks in this project (@Model.Tasks.Count)</h5>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
-                    <i class="bi bi-plus-circle"></i> Create New Task
-                </button>
-            </div>
-            
-            <div class="card shadow-sm">
-                <div class="card-body p-0">
+                <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width: 4px; height: 24px; background: var(--dash-primary); border-radius: 2px;"></div>
+                        <h5 class="mb-0 fw-bold" style="color: #0b3b6d;">Tasks in this project</h5>
+                        <span class="badge badge-soft-primary px-2">@Model.Tasks.Count Total</span>
+                    </div>
+                    <button type="button" class="btn btn-primary d-flex align-items-center gap-2 px-3" 
+                            data-bs-toggle="modal" data-bs-target="#createTaskModal" style="border-radius: 10px;">
+                        <i class="bi bi-plus-lg fs-5"></i> Create New Task
+                    </button>
+                </div>
+                
+                <div class="dash-surface shadow-sm mb-5">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="bg-light">
+                        <table class="table align-middle mb-0">
+                            <thead>
                                 <tr>
-                                    <th># Task ID</th>
+                                    <th style="width: 120px;" class="ps-4"># ID</th>
                                     <th>Annotator</th>
-                                    <th>Assigned Images</th>
-                                    <th>Progress</th> <th>Status</th>
-                                    <th>Action</th>
+                                    <th>Assigned</th>
+                                    <th style="width: 300px;">Progress</th> 
+                                    <th style="width: 150px;">Status</th>
+                                    <th style="width: 140px;" class="text-end pe-4">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -338,22 +384,26 @@
                                     @foreach (var task in Model.Tasks)
                                     {
                                         <tr>
-                                            <td><strong>#@task.TaskId</strong></td>
-                                            <td>
-                                                <i class="bi bi-person-badge"></i> @task.AnnotatorName
+                                            <td class="ps-4">
+                                                <span class="fw-bold text-indigo">#@task.TaskId</span>
                                             </td>
                                             <td>
-                                                <span class="badge bg-info text-dark">@task.ImageCount Images</span>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="dash-avatar" style="width: 32px; height: 32px; font-size: 12px;">
+                                                        @(task.AnnotatorName?.Substring(0, 1).ToUpper() ?? "A")
+                                                    </div>
+                                                    <span class="fw-semibold">@task.AnnotatorName</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-soft-primary">@task.ImageCount Images</span>
                                             </td>
                                             
-                                            <td style="width: 250px;">
+                                            <td>
                                                 @{
                                                     int total = task.ImageCount;
                                                     int approved = task.ApprovedCount;
                                                     int rejected = task.RejectedCount;
-                                                    
-                                                    // Pending: Done (Submitted) but not yet reviewed. 
-                                                     // Note: task.SubmittedCount can be the total number of submissions, so use task.ImageCount for precise % calculation.
                                                     int pending = task.SubmittedCount - approved - rejected; 
                                                     if(pending < 0) pending = 0; 
                                                     if(pending + approved + rejected > total) pending = total - approved - rejected;
@@ -361,36 +411,43 @@
                                                     int approvedPct = total > 0 ? (int)Math.Min(100, Math.Round((double)approved / total * 100)) : 0;
                                                     int rejectedPct = total > 0 ? (int)Math.Min(100 - approvedPct, Math.Round((double)rejected / total * 100)) : 0;
                                                     int pendingPct = total > 0 ? (int)Math.Min(100 - approvedPct - rejectedPct, Math.Round((double)pending / total * 100)) : 0;
-                                                    
                                                     int totalProgressPct = approvedPct + rejectedPct + pendingPct;
                                                 }
                                                 
-                                                <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 12px;">
-                                                    <span class="text-muted">@(approved + rejected + pending) / @total Done</span>
+                                                <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 11px;">
+                                                    <span class="text-muted fw-bold">@(approved + rejected + pending) / @total DONE</span>
                                                     <span class="fw-bold text-dark">@(totalProgressPct)%</span>
                                                 </div>
                                                 
-                                                <div class="progress shadow-sm" style="height: 10px; border-radius: 5px;">
+                                                <div class="progress" style="height: 6px; border-radius: 3px; background: #f1f5f9;">
                                                     <div class="progress-bar bg-success" role="progressbar" style="width: @(approvedPct)%" title="Approved: @approved"></div>
-                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: @(pendingPct)%" title="Pending Review: @pending"></div>
+                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: @(pendingPct)%" title="Pending: @pending"></div>
                                                     <div class="progress-bar bg-danger" role="progressbar" style="width: @(rejectedPct)%" title="Rejected: @rejected"></div>
                                                 </div>
                                             </td>
                                             <td>
-                                                @{
-                                                    string badgeClass = task.Status.ToString() switch
-                                                    {
-                                                        "Assigned" => "bg-secondary",
-                                                        "InProgress" => "bg-primary",
-                                                        "Completed" => "bg-success",
-                                                        _ => "bg-light text-dark"
-                                                    };
+                                                @if (task.Status.ToString() == "Completed")
+                                                {
+                                                    <span class="badge badge-soft-success">
+                                                        <i class="bi bi-check-circle-fill me-1"></i> Completed
+                                                    </span>
                                                 }
-                                                <span class="badge @badgeClass">@task.Status</span>
+                                                else if (task.Status.ToString() == "InProgress")
+                                                {
+                                                    <span class="badge badge-soft-warning">
+                                                        <i class="bi bi-arrow-repeat me-1"></i> In Progress
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-soft-primary">
+                                                        <i class="bi bi-bookmark-plus me-1"></i> Assigned
+                                                    </span>
+                                                }
                                             </td>
-                                            <td>
-                                                <a asp-page="/Manager/TaskDetails" asp-route-id="@task.TaskId" class="btn btn-sm btn-outline-primary shadow-sm">
-                                                    <i class="bi bi-eye"></i> View Details
+                                            <td class="pe-4 text-end">
+                                                <a asp-page="/Manager/TaskDetails" asp-route-id="@task.TaskId" class="btn btn-action btn-outline-primary">
+                                                    <i class="bi bi-eye-fill"></i> View
                                                 </a>
                                             </td>
                                         </tr>
@@ -399,7 +456,8 @@
                                 else
                                 {
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-4"> 
+                                        <td colspan="6" class="text-center text-muted py-5"> 
+                                            <i class="bi bi-inbox display-4 d-block mb-2 opacity-25"></i>
                                             No tasks found. Click "Create New Task" to begin.
                                         </td>
                                     </tr>
@@ -484,38 +542,39 @@
 </div>
 
 <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fw-semibold" id="editModalLabel">
-                    <i class="bi bi-pencil-square me-2"></i> Edit label
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px; border: none; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+            <div class="modal-header py-3 px-4" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <h5 class="modal-title fw-bold" id="editModalLabel" style="color: #0b3b6d;">
+                    <i class="bi bi-pencil-square me-2 text-primary"></i>Edit Label
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <form asp-page-handler="UpdateLabel" method="post">
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <input type="hidden" name="projectId" value="@Model.Project.Id" />
                     <input type="hidden" name="labelId" id="editLabelId" />
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Label name</label>
-                        <input type="text" class="form-control" name="labelName" id="editLabelName" required />
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase" style="color: #64748b;">Label Name</label>
+                        <input type="text" class="form-control px-3 py-2" name="labelName" id="editLabelName" required style="border-radius: 10px;" />
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Display color</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <input type="color" class="form-control form-control-color" name="labelColor" id="editLabelColor" />
-                            <small class="text-muted">Choose a color</small>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-uppercase" style="color: #64748b;">Display Color</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <input type="color" class="form-control form-control-color" name="labelColor" id="editLabelColor" 
+                                   style="width: 50px; height: 50px; border-radius: 10px;" />
+                            <div class="text-muted small">Update the color for visual distinction in annotator view.</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save2"></i> Save changes
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light px-4" data-bs-toggle="modal" style="border-radius: 10px; font-weight: 600;">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4 py-2" style="border-radius: 10px; font-weight: 600;">
+                        <i class="bi bi-save2-fill me-1"></i> Save Changes
                     </button>
                 </div>
             </form>

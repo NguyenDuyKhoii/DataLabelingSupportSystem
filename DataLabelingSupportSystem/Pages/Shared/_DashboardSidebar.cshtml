@@ -1,4 +1,4 @@
-﻿@{
+@{
     var role = (string)(Model?.Role ?? "Manager");
     var currentPath = (Context?.Request?.Path.Value ?? "").ToLowerInvariant();
 
@@ -7,8 +7,7 @@
     {
         "Admin" => new[]
         {
-            new { Text = "Dashboard", Icon = "bi-speedometer2", Page = "/Admin/Index" },
-            new { Text = "Users",      Icon = "bi-people",       Page = "/Admin/ListOfUser" },
+            new { Text = "Admin Hub", Icon = "bi-grid-1x2-fill", Page = "/Admin/ListOfUser" },
         },
         "Reviewer" => new[]
         {

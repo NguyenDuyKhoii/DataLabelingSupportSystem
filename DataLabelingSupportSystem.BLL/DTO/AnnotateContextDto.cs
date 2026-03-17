@@ -1,10 +1,11 @@
-﻿using DataLabelingSupportSystem.BLL.DTO;
+using DataLabelingSupportSystem.BLL.DTO;
 
 namespace DataLabelingSupportSystem.BLL.DTO
 {
     public class AnnotateContextDto
     {
         public DataItemDto Item { get; set; } = null!;
+        public int TaskId { get; set; }
         public int SubmissionId { get; set; }
         public string? Color { get; set; }
         public string? SubmissionStatus { get; set; }

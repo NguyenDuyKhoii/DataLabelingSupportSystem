@@ -81,10 +81,19 @@
         }
 
         .auth-right {
-            padding: 40px;
+            padding: 40px 60px;
             display: flex;
             flex-direction: column;
             justify-content: center;
+        }
+
+        .auth-card-title {
+            font-weight: 850;
+            color: #0b3b6d;
+            font-size: 2.4rem;
+            text-align: center;
+            margin-bottom: 30px;
+            letter-spacing: -0.5px;
         }
 
         .form-control.auth-input {
@@ -222,7 +231,7 @@
 
                 <div class="col-lg-6">
                     <div class="auth-right">
-                        <h3 class="mt-4 mb-3" style="font-weight:800; color:#0b3b6d;">Login</h3>
+                        <h2 class="auth-card-title">Login</h2>
 
                         @if (!string.IsNullOrEmpty(Model.Error))
                         {
